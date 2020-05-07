@@ -4,11 +4,11 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 
-import features
-import preprocessing
-import shared_constants
-import visualization
-from file_handling import get_file_names_in_directory_for_pattern, get_parent_directory_for, get_project_directory
+import src.preprocessing as preprocessing
+import src.shared_constants as shared_constants
+import src.visualization as visualization
+from src.features import calculate_auto_correlation_data_frame
+from src.file_handling import get_file_names_in_directory_for_pattern, get_parent_directory_for, get_project_directory
 
 PHYPHOX_DIRECTORY_NAME = "phyphox"
 
@@ -142,4 +142,3 @@ def test_auto_correlation():
 
     data_frames = [acceleration_data_frame, gyroscope_data_frame, mean_coefficient_data_frame_acceleration, mean_coefficient_data_frame_gyroscope]
     visualization.visualize_different_sensors(data_frames, number_of_plot_rows=2, number_of_plot_cols=2, save=True)
-
