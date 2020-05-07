@@ -1,4 +1,5 @@
 matplotlib
+matrixprofile
 numpy
 pandas
 pytest
