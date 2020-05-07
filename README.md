@@ -21,6 +21,15 @@ Then cd into the repo and install the requirements by running `pip install -r re
 
 Also if you don't have a python IDE yet, we can recommend [PyCharm](https://www.jetbrains.com/de-de/pycharm/download/#section=mac) for which we get a free professional licence with our HPI email address.
 
+In pycharm you also need to configure your conda environment to be the default env. Do so by clicking in the bottom right corner on your Python interpreter (e.g. Python 3.7) and then on "Add interpreter". 
+There you should be able to select the previously created conda env.
+Select it and add the interpreter.
+
+Also make sure that pytest is your default test runner. 
+Therefore go to your IDE preferences (PyCharm --> Preferences) and then go to Tools --> Python Integrated Tools --> Default Test Runner.
+
+You can then run tests easily using the play button next to the test-methods.
+
 ## Guidelines
 
 Let's try to write clean and generally good quality code with comments for each method/class from the beginning on.
