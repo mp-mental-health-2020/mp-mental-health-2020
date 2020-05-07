@@ -1,6 +1,6 @@
 import pandas as pd
 
-import shared_constants
+from src import shared_constants
 
 
 def set_time_delta_as_index(data_frame, origin_timestamp_unit="ms", output_timestamp_unit="milliseconds", timestamp_key=None):

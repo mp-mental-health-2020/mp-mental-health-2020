@@ -1,1 +1,3 @@
 plots/
+*.xml
+.idea/
