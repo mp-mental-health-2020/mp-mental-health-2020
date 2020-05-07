@@ -1,7 +1,7 @@
 import pandas as pd
 from scipy import interpolate
 
-import src.shared_constants as shared_constants
+from src import shared_constants
 from src.exceptions import IncorrectInputTypeException
 
 

@@ -4,13 +4,9 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 
-import src.preprocessing as preprocessing
-import src.shared_constants as shared_constants
-import src.visualization as visualization
+from src import preprocessing, shared_constants, visualization
 from src.features import calculate_auto_correlation_data_frame
 from src.file_handling import get_file_names_in_directory_for_pattern, get_parent_directory_for, get_project_directory
-
-from src.features import calculate_auto_correlation_data_frame
 
 PHYPHOX_DIRECTORY_NAME = "phyphox"
 
