@@ -1,6 +1,6 @@
 matplotlib
 matrixprofile
 numpy
-pandas
+pandas==0.25.3
 pytest
 scipy

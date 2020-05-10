@@ -28,7 +28,8 @@ Select it and add the interpreter.
 Also make sure that pytest is your default test runner. 
 Therefore go to your IDE preferences (PyCharm --> Preferences) and then go to Tools --> Python Integrated Tools --> Default Test Runner.
 
-You can then run tests easily using the play button next to the test-methods.
+Before committing please run all the tests using this command:
+`python -m pytest`
 
 ## Guidelines
 

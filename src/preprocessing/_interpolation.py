@@ -1,8 +1,8 @@
 import pandas as pd
 from scipy import interpolate
 
-import shared_constants
-from exceptions import IncorrectInputTypeException
+from src import shared_constants
+from src.exceptions import IncorrectInputTypeException
 
 
 def align_data(data_frame, interpolation_method='linear', listening_rate=20, reference_sensor="acceleration"):

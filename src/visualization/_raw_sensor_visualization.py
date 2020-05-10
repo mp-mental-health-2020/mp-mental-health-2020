@@ -4,7 +4,7 @@ import time
 
 import matplotlib.pyplot as plt
 
-import file_handling
+from src import file_handling
 
 
 def _get_rgba_color(number_of_distinct_colors, index):
