@@ -2,6 +2,7 @@
 
 Branch | Travis CI  |
 ------ | ---------- |
+master|[![Build Status](https://travis-ci.org/mp-mental-health-2020/mp-mental-health-2020.svg?branch=master)](https://travis-ci.org/github/mp-mental-health-2020/mp-mental-health-2020)|
 dev|[![Build Status](https://travis-ci.org/mp-mental-health-2020/mp-mental-health-2020.svg?branch=dev)](https://travis-ci.org/github/mp-mental-health-2020/mp-mental-health-2020)|
 
 ## Setup
