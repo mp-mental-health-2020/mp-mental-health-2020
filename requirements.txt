@@ -4,3 +4,4 @@ numpy
 pandas==0.25.3
 pytest
 scipy
+scikit-learn
