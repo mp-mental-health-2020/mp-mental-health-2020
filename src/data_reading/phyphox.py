@@ -51,7 +51,7 @@ def filter_files(file_names, sensors):
     return filtered_files
 
 
-def read_experiment(experiment_path, sensors=None):
+def read_experiment(experiment_path, sensors=None, merge_sources=False):
     """
     Read in the data of the experiment given by the path. Used sensors cna be adjusted by specifying the 'sensors' parameter.
 
@@ -61,7 +61,8 @@ def read_experiment(experiment_path, sensors=None):
         Path to file containing the sensor recordings
     sensors : array_like, optional (default=None)
         List of sensor names that should be included in the data frame. If None, all available once will be included.
-
+    merge_sources: bool
+        True, if we have separate accelerometer and gyro files that need merging. Default False, as we're using the new phyphox configuration
     Returns
     -------
         pd.DataFrame for all (specified) sensors with an sorted pd.TimeDeltaIndex. May contain 'NaN' values if sensors are not in sync.
@@ -75,16 +76,22 @@ def read_experiment(experiment_path, sensors=None):
         data_frame = pd.read_csv(file_name)
         columns = data_frame.columns
 
-        # sensor column name convention: {sensor_name}_{dimension}
-        new_columns = list()
-        for column in columns:
-            new_columns.append('_'.join(column.split(' ')[:-1]).lower())
-        data_frame.columns = new_columns
+        # for our old data samples we need to rename the columns
+        if merge_sources:
+            # sensor column name convention: {sensor_name}_{dimension}
+            new_columns = list()
+            for column in columns:
+                new_columns.append('_'.join(column.split(' ')[:-1]).lower())
+            data_frame.columns = new_columns
         data_frames.append(data_frame)
 
     # combine data frames and set index to a sorted pandas.TimeDeltaIndex (needed for interpolation)
-    data_frame = reduce(lambda x, y: pd.merge(x, y, on='time', how='outer'), data_frames)
+    timestamp_column_name = "time" if merge_sources else "timestamp"
+    if merge_sources:
+        data_frame = reduce(lambda x, y: pd.merge(x, y, on=timestamp_column_name, how='outer'), data_frames)
+    else:
+        data_frame = data_frames[0]
     data_frame = set_time_delta_as_index(data_frame, origin_timestamp_unit='s',
-                                                       output_timestamp_unit="milliseconds",
-                                                       timestamp_key="time")
+                                                           output_timestamp_unit="milliseconds",
+                                                           timestamp_key=timestamp_column_name)
     return data_frame.sort_index()
