@@ -20,6 +20,8 @@ def transform_data_using_pca(data_frame, pca=None, return_pca=False, normalize_d
         Already fitted sklearn.PCA to transform the given data with the supplied principal components.
     return_pca : bool, default=False
         If True, the fitted (or given) pca will be returned.
+    normalize_data : bool, default=True
+        If True, each column will be normalized using the min-max-feature scaling.
     svd_solver : str {'auto', 'full', 'arpack', 'randomized'}
         If auto :
             The solver is selected by a default policy based on `X.shape` and
@@ -51,6 +53,12 @@ def transform_data_using_pca(data_frame, pca=None, return_pca=False, normalize_d
         estimated from input data. Otherwise it equals the parameter n_components, or the lesser value of n_features and n_sample if n_components
         is None. If the value is 'mle' or between 0 and 1, than the number of dimensions is chosen by how many dimensions are needed to explain at
         least that amount of variance in the data.
+    random_state : int, RandomState instance or None, default=None
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`. Used when ``svd_solver`` == 'arpack' or 'randomized'.
+
 
     Returns
     -------
