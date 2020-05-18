@@ -3,3 +3,4 @@ plots/
 .idea/
 **/__pycache__/
 *.pyc
+data/

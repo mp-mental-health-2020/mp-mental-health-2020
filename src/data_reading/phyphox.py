@@ -20,7 +20,7 @@ def get_phyphox_data_directory():
     -------
         Directory containing the phyphox data
     """
-    return os.path.join(get_parent_directory_for(get_project_directory()), "data", PHYPHOX_DIRECTORY_NAME)
+    return os.path.join(get_project_directory(), "data", PHYPHOX_DIRECTORY_NAME)
 
 
 def get_experiments():
