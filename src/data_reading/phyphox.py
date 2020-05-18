@@ -1,12 +1,12 @@
 import os
 from functools import reduce
+from random import sample
 
 import pandas as pd
 
-from src.file_handling import get_file_names_in_directory_for_pattern, get_parent_directory_for, get_project_directory
+from src import preprocessing
+from src.file_handling import get_file_names_in_directory_for_pattern, get_project_directory
 from src.preprocessing import set_time_delta_as_index
-
-from src.features import calculate_auto_correlation_data_frame
 
 PHYPHOX_DIRECTORY_NAME = "phyphox"
 
@@ -85,6 +85,18 @@ def read_experiment(experiment_path, sensors=None):
     # combine data frames and set index to a sorted pandas.TimeDeltaIndex (needed for interpolation)
     data_frame = reduce(lambda x, y: pd.merge(x, y, on='time', how='outer'), data_frames)
     data_frame = set_time_delta_as_index(data_frame, origin_timestamp_unit='s',
-                                                       output_timestamp_unit="milliseconds",
-                                                       timestamp_key="time")
+                                         output_timestamp_unit="milliseconds",
+                                         timestamp_key="time")
     return data_frame.sort_index()
+
+
+def get_random_aligned_test_file():
+    """
+    This method will return a random pyphox experiment to use it while developing. This is a convenience method for developing.
+    Returns
+    -------
+        Usable data frame with aligned sensor data and without 'Nan' values.
+    """
+    experiments = get_experiments()
+    data_frame = read_experiment(sample(experiments, 1)[0])
+    return preprocessing.align_data(data_frame, listening_rate=20)
