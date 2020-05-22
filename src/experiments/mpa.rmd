@@ -1,0 +1,32 @@
+---
+title: "R Notebook"
+author: julio
+date: 22.05.20
+output: html_notebook
+---
+
+The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
+handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
+To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
+position the caret at any line or the code chunk, then click "+".
+
+The code chunk appears:
+```{r}
+```
+
+Type any R code in the chunk, for example:
+```{r}
+data <- read.csv('/Users/julio/Documents/Uni/5_Master/Master Project/mp-mental-health-2020/data/phyphox/long recording/acc_and_gyr_100hz_buff_full_export.csv')
+data.new <- data[seq(1, nrow(data), 6), ] %>% select(-timestamp) %T>% plot()
+```
+
+```{r}
+mp <- tsmp(data.new , window_size = 30, mode = "mstomp",  verbose = 2) %>% find_motif(n_motifs = 3) %T>% plot()
+
+```
+```{r}
+mp <- fluss(mp, 10)
+```
+
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to built and preview an output.
