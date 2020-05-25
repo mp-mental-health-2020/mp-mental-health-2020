@@ -25,7 +25,16 @@ mp <- tsmp(data.new , window_size = 30, mode = "mstomp",  verbose = 2) %>% find_
 
 ```
 ```{r}
-mp <- fluss(mp, 10)
+mp_acc <- tsmp(data.new[[1]] , window_size = 50, verbose = 2) %>% find_motif(n_motifs = 3) %T>% plot()
+
+```
+```{r}
+mp_acc <- tsmp(data.new[[4]] , window_size = 30, verbose = 2) %>% find_motif(n_motifs = 3) %T>% plot()
+
+```
+
+```{r}
+mp_acc <- fluss(mp_acc, 10) %T>% plot()
 ```
 
 Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
