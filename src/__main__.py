@@ -1,6 +1,6 @@
 import numpy as np
 
-from src import preprocessing, visualization, shared_constants
+from src import preprocessing, shared_constants, visualization
 from src.data_reading.phyphox import get_experiments, read_experiment
 from src.features import calculate_auto_correlation_data_frame
 
@@ -22,10 +22,12 @@ def autocorrelation_phyphox():
                    mean_coefficient_data_frame_gyroscope]
     visualization.visualize_different_sensors(data_frames, number_of_plot_rows=2, number_of_plot_cols=2, save=True)
 
+
 def get_data_frame_from_sensor_data(data_frame, sensor_name):
     _regex = "{sensor_name}_{dimension}".format(sensor_name=sensor_name, dimension=shared_constants.DIMENSIONS_KEY_LIST)
     data_frame = data_frame.filter(regex=_regex, axis=1)
     return data_frame
+
 
 def calculate_auto_correlation_coefficients(data_frame):
     coefficient_data_frame = calculate_auto_correlation_data_frame(data_frame)
