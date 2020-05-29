@@ -6,34 +6,51 @@ from src.exceptions import IncorrectInputTypeException
 
 
 def align_data(data_frame, interpolation_method='linear', listening_rate=20, reference_sensor="acceleration"):
+    """
+
+    Parameters
+    ----------
+    data_frame
+    interpolation_method
+    listening_rate
+    reference_sensor:
+        if None, then only do interpolation on the whole dataframe
+
+    Returns
+    -------
+
+    """
     if not isinstance(data_frame, pd.DataFrame):
         raise IncorrectInputTypeException(data_frame, pd.DataFrame)
 
-    # interpolate reference sensor
-    _regex = "{sensor_name}_{dimension}".format(sensor_name=reference_sensor, dimension=shared_constants.DIMENSIONS_KEY_LIST)
-    reference_sensor_data = data_frame.filter(regex=_regex, axis=1)
-
+    if reference_sensor:
+        # interpolate reference sensor
+        _regex = "{sensor_name}_{dimension}".format(sensor_name=reference_sensor, dimension=shared_constants.DIMENSIONS_KEY_LIST)
+        reference_sensor_data = data_frame.filter(regex=_regex, axis=1)
+    else:
+        reference_sensor_data = data_frame
     interpolated_reference_sensor = correct_sampling_frequency_by_interpolation(data_frame=reference_sensor_data.dropna(how='all'),
                                                                                 interpolation_method=interpolation_method,
                                                                                 listening_rate=listening_rate,
                                                                                 time_unit='ms')
     interpolation_data_list = [interpolated_reference_sensor]
 
-    # interpolate other sensors
-    for sensor in data_frame.filter(regex=".*_(x|0)", axis=1).columns:
-        sensor = sensor.split("_")[0]
-        if sensor == reference_sensor:
-            continue
+    if reference_sensor:
+        # interpolate other sensors
+        for sensor in data_frame.filter(regex=".*_(x|0)", axis=1).columns:
+            sensor = sensor.split("_")[0]
+            if sensor == reference_sensor:
+                continue
 
-        _regex = "{sensor_name}_{dimension}".format(sensor_name=sensor, dimension=shared_constants.DIMENSIONS_KEY_LIST)
-        sensor_data = data_frame.filter(regex=_regex, axis=1)
-        interpolated_sensor_data = correct_sampling_frequency_by_interpolation(data_frame=sensor_data.dropna(how='all'),
-                                                                               interpolation_method=interpolation_method,
-                                                                               listening_rate=listening_rate,
-                                                                               time_unit='ms',
-                                                                               start=interpolated_reference_sensor.index[0],
-                                                                               end=interpolated_reference_sensor.index[-1])
-        interpolation_data_list.append(interpolated_sensor_data)
+            _regex = "{sensor_name}_{dimension}".format(sensor_name=sensor, dimension=shared_constants.DIMENSIONS_KEY_LIST)
+            sensor_data = data_frame.filter(regex=_regex, axis=1)
+            interpolated_sensor_data = correct_sampling_frequency_by_interpolation(data_frame=sensor_data.dropna(how='all'),
+                                                                                   interpolation_method=interpolation_method,
+                                                                                   listening_rate=listening_rate,
+                                                                                   time_unit='ms',
+                                                                                   start=interpolated_reference_sensor.index[0],
+                                                                                   end=interpolated_reference_sensor.index[-1])
+            interpolation_data_list.append(interpolated_sensor_data)
     return pd.concat(interpolation_data_list, axis=1)
 
 
