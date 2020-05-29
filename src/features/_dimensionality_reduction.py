@@ -1,9 +1,12 @@
+import pandas as pd
 from sklearn.decomposition import PCA
 
 from src.data_reading.phyphox import get_random_aligned_test_file
+from src.preprocessing import normalize_using_min_max_scaling
 
 
-def transform_data_using_pca(data_frame, pca=None, return_pca=False, svd_solver='full', whiten=False, n_components=0.95, random_state=None):
+def transform_data_using_pca(data_frame, pca=None, return_pca=False, normalize_data=True, svd_solver='full', whiten=False, n_components=0.95,
+                             random_state=None):
     """
     Transforms the given data using a Principal Component Analysis (PCA). If a pca is given, components will not be be calculated on the given
     data_frame but the given once will be used. This method can be used to reduce the dimensionality of the given data_frame. In order to do that
@@ -17,6 +20,8 @@ def transform_data_using_pca(data_frame, pca=None, return_pca=False, svd_solver=
         Already fitted sklearn.PCA to transform the given data with the supplied principal components.
     return_pca : bool, default=False
         If True, the fitted (or given) pca will be returned.
+    normalize_data : bool, default=True
+        If True, each column will be normalized using the min-max-feature scaling.
     svd_solver : str {'auto', 'full', 'arpack', 'randomized'}
         If auto :
             The solver is selected by a default policy based on `X.shape` and
@@ -48,6 +53,12 @@ def transform_data_using_pca(data_frame, pca=None, return_pca=False, svd_solver=
         estimated from input data. Otherwise it equals the parameter n_components, or the lesser value of n_features and n_sample if n_components
         is None. If the value is 'mle' or between 0 and 1, than the number of dimensions is chosen by how many dimensions are needed to explain at
         least that amount of variance in the data.
+    random_state : int, RandomState instance or None, default=None
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`. Used when ``svd_solver`` == 'arpack' or 'randomized'.
+
 
     Returns
     -------
@@ -59,8 +70,13 @@ def transform_data_using_pca(data_frame, pca=None, return_pca=False, svd_solver=
     if not pca:
         pca = PCA(svd_solver=svd_solver, whiten=whiten, n_components=n_components, random_state=random_state)
         pca.fit(data_frame)
+
+    if normalize_data:
+        # This is done to ensure similar value ranges for our data as this could affect the variance evaluation for our data
+        data_frame = normalize_using_min_max_scaling(data_frame)
+
     # Note that a pca needs centered data, but the pca will take care of it by itself
-    transformed_data_frame = pca.transform(data_frame)
+    transformed_data_frame = pd.DataFrame(pca.transform(data_frame))
     if return_pca:
         return transformed_data_frame, pca
     return transformed_data_frame
