@@ -51,7 +51,7 @@ def filter_files(file_names, sensors):
     return filtered_files
 
 
-def read_experiment(experiment_path, sensors=None, merge_sources=False):
+def read_experiment(experiment_path, sensors=None, offsets=None):
     """
     Read in the data of the experiment given by the path. Used sensors cna be adjusted by specifying the 'sensors' parameter.
 
@@ -60,9 +60,9 @@ def read_experiment(experiment_path, sensors=None, merge_sources=False):
     experiment_path : str
         Path to file containing the sensor recordings
     sensors : array_like, optional (default=None)
-        List of sensor names that should be included in the data frame. If None, all available once will be included.
-    merge_sources: bool
-        True, if we have separate accelerometer and gyro files that need merging. Default False, as we're using the new phyphox configuration
+        List of sensor names that should be included in the data frame. If None, all available ones will be included.
+    offsets: dict or None
+        if dict then we provide the offsets for each file - the last part of the file name will be associated with the offsets for each hand
     Returns
     -------
         pd.DataFrame for all (specified) sensors with an sorted pd.TimeDeltaIndex. May contain 'NaN' values if sensors are not in sync.
@@ -71,30 +71,33 @@ def read_experiment(experiment_path, sensors=None, merge_sources=False):
     if sensors:
         file_names = filter_files(file_names, sensors)
 
-    data_frames = list()
+    timestamp_column_name = "timestamp"
+    data_frames = {}
     for file_name in file_names:
         data_frame = pd.read_csv(file_name)
-        columns = data_frame.columns
+        offset = None
+        hand = file_name.replace(".csv", "").split("_")[-1]
+        hand = hand if hand in ["left", "right"] else None
+        if offsets:
+            hand = file_name.replace(".csv", "").split("_")[-1]
+            if hand:
+                offset = offsets[hand]
+            else:
+                raise ValueError("no offset specified for the given hand", hand)
 
-        # for our old data samples we need to rename the columns
-        if merge_sources:
-            # sensor column name convention: {sensor_name}_{dimension}
-            new_columns = list()
-            for column in columns:
-                new_columns.append('_'.join(column.split(' ')[:-1]).lower())
-            data_frame.columns = new_columns
-        data_frames.append(data_frame)
-
-    # combine data frames and set index to a sorted pandas.TimeDeltaIndex (needed for interpolation)
-    timestamp_column_name = "time" if merge_sources else "timestamp"
-    if merge_sources:
-        data_frame = reduce(lambda x, y: pd.merge(x, y, on=timestamp_column_name, how='outer'), data_frames)
-    else:
-        data_frame = data_frames[0]
-    data_frame = set_time_delta_as_index(data_frame, origin_timestamp_unit='s',
-                                                           output_timestamp_unit="milliseconds",
-                                                           timestamp_key=timestamp_column_name)
-    return data_frame.sort_index()
+        if offset:
+            offset_index = data_frame.iloc[(data_frame[timestamp_column_name]-float(offset)).abs().argsort()[:1]].index.tolist()[0]
+            data_frame = data_frame.iloc[offset_index:,:]
+        data_frame = set_time_delta_as_index(data_frame, origin_timestamp_unit='s',
+                                output_timestamp_unit="milliseconds",
+                                timestamp_key=timestamp_column_name)
+        data_frame.sort_index(inplace=True)
+        # we either have multiple data frames for different hands or just one that we can return right away
+        if hand:
+            data_frames[hand] = data_frame
+        else:
+            return data_frame
+    return data_frames
 
 
 def get_random_aligned_test_file():
