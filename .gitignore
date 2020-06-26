@@ -4,4 +4,3 @@ plots/
 **/__pycache__/
 *.pyc
 **.DS_Store
-data/phyphox/short recordings/*/phyphox_*.csv
