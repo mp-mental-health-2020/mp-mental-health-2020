@@ -1,5 +1,4 @@
 import os
-from functools import reduce
 from random import sample
 
 import pandas as pd

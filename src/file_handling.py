@@ -26,6 +26,10 @@ def get_project_directory():
     return Path(__file__).parent.parent
 
 
+def get_sub_directories(experiments_folder_path):
+    return [os.path.join(experiments_folder_path, o) for o in os.listdir(experiments_folder_path) if os.path.isdir(os.path.join(experiments_folder_path, o))]
+
+
 def get_file_names_in_directory_for_pattern(directory, pattern, print_file_names=False):
     try:
         requested_file_pattern = os.path.join(directory, MATCH_ANY_INCLUDE_SUB_DIR, pattern)
