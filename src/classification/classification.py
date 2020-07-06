@@ -1,5 +1,6 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVC
@@ -9,7 +10,7 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 import pandas as pd
 
-models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()), ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('NB', GaussianNB())]
+models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()), ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), ('NB', GaussianNB())]
 
 
 def classify_all(X, y, label_ids=None):
