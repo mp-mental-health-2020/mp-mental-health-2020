@@ -1,4 +1,5 @@
 import glob
+import json
 import os
 import warnings
 from pathlib import Path
@@ -46,3 +47,16 @@ def get_file_names_in_directory_for_pattern(directory, pattern, print_file_names
             short_file_name = file_name.split(os.path.sep)[-1]
             print(short_file_name)
     return filtered_file_names
+
+
+def read_json_file(file_name):
+    try:
+        with open(file_name, "r") as file_:
+            data_text = file_.read()
+        try:
+            json_string = json.loads(data_text)
+            return json_string
+        except json.JSONDecodeError as e:
+            raise Exception("Decoding json failed for {file_name}: {error}".format(file_name=file_name, error=e))
+    except FileNotFoundError as e:
+        raise Exception("File {file_name} not found: {error}".format(file_name=file_name, error=e))

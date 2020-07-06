@@ -1,0 +1,2 @@
+Indoor Positioning files for Anne, Marvin and Cilly needed to be rerecorded based on the video of the recording from before.
+Indoor Positioning files for Antonia, Jonas, Ana, Julius-2, Fabi and Julius were recorded with misplaced beacons for Major=1 and Minor=[2, 10]

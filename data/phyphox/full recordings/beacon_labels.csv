@@ -1,0 +1,23 @@
+Major, Minor, Labels
+1, 1, ["broken"]
+1, 2, ["hand-sanitizer"]
+1, 3, ["oven", "fridge", "sink"]
+1, 4, ["sink"]
+1, 5, ["window"]
+1, 6, ["window"]
+1, 7, []
+1, 8, []
+1, 9, ["window"]
+1, 10, []
+
+Major, Minor, Room
+1, 1, "broken"
+1, 2, "entrance"
+1, 3, "kitchen"
+1, 4, "bathroom men"
+1, 5, "main room"
+1, 6, "main room"
+1, 7, "hallway"
+1, 8, "hallway"
+1, 9, "second room"
+1, 10, "bathroom women"
