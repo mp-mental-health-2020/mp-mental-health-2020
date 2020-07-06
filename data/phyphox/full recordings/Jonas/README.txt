@@ -1,0 +1,1 @@
+The back file stopped right at the beginning of the "cleaning cup" task, but then it was continued a few seconds after this. So there might be a necessity of splitting this data around this point, and fill the gap with NA's
