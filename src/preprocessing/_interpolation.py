@@ -6,6 +6,7 @@ from src.exceptions import IncorrectInputTypeException
 
 
 def align_data(data_frame, interpolation_method='linear', listening_rate=20, reference_sensor="acceleration"):
+    # TODO: switch listening rate to sample rate
     """
 
     Parameters
