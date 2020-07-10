@@ -3,6 +3,7 @@ from random import sample
 
 import pandas as pd
 
+from preprocessing import align_data
 from src import preprocessing
 from src.file_handling import get_file_names_in_directory_for_pattern, get_project_directory
 from src.preprocessing import set_time_delta_as_index
@@ -50,7 +51,7 @@ def filter_files(file_names, sensors):
     return filtered_files
 
 
-def read_experiment(experiment_path, sensors=None, offsets=None):
+def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=True):
     """
     Read in the data of the experiment given by the path. Used sensors cna be adjusted by specifying the 'sensors' parameter.
 
@@ -62,6 +63,7 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
         List of sensor names that should be included in the data frame. If None, all available ones will be included.
     offsets: dict or None
         if dict then we provide the offsets for each file - the last part of the file name will be associated with the offsets for each hand
+    drop_lin_acc: bool that indicates if the linear acceleration should be considered
     Returns
     -------
         pd.DataFrame for all (specified) sensors with an sorted pd.TimeDeltaIndex. May contain 'NaN' values if sensors are not in sync.
@@ -74,6 +76,13 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
     data_frames = {}
     for file_name in file_names:
         data_frame = pd.read_csv(file_name)
+
+        # drop the linear acceleration columns here
+        if drop_lin_acc:
+            data_frame.drop(columns=["linear_acceleration x", "linear_acceleration y", "linear_acceleration z"], inplace=True)
+            # columns: timestamp, 3 x acceleration, 3 x gyro
+            assert len(data_frame.columns) == 7
+
         offset = None
         hand = file_name.replace(".csv", "").split("_")[-1]
         hand = hand if hand in ["left", "right"] else None
@@ -97,6 +106,55 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
         else:
             return data_frame
     return data_frames
+
+
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True):
+    """
+
+    Parameters
+    ----------
+    experiment_dirs
+    sample_rate
+
+    Returns a triple of chunks, null_chunks and the classes for the chunks
+    -------
+
+    """
+    chunks = {"right": [], "left": []}
+    null_chunks = {"right": [], "left": []}
+    y_columns = ["start", "end", "label", "hand"]
+    y = pd.DataFrame(columns=y_columns)
+    # del experiment_dirs[1]
+    for directory in experiment_dirs:
+        offsets = {}
+        with open(directory + "/offset.txt") as f:
+            for line in f:
+                (key, val) = line.split(": ")
+                offsets[key.lower()] = val
+
+        data_frames = read_experiment(directory, offsets=offsets, drop_lin_acc=drop_lin_acc)
+
+        data_frames = {key: align_data(data_frame, listening_rate=1000 / sample_rate, reference_sensor=None) for
+                       key, data_frame in data_frames.items()}
+
+        y_user = pd.read_csv(directory + "/annotations.tsv", delimiter="\t", header=None)
+        hands = pd.read_csv(directory + "/hands.tsv", delimiter="\t", header=None)
+        y_user = y_user.iloc[:, [3, 5, 8]]
+        hands = hands.iloc[:, [8]]
+        y_user = pd.concat([y_user, hands], axis=1)
+        y_user.columns = y_columns
+        y = pd.concat([y, y_user], axis=0)
+
+        # iterate over the annotations and split the timeseries in chunks
+        for key, df in data_frames.items():
+            if key in chunks:
+                chunks[key] += [df.iloc[int(annotation["start"] * sample_rate):int(annotation["end"] * sample_rate)] for
+                                i, annotation in y_user.iterrows()]
+                # null chunks are everything in between annotations
+                null_chunks[key] += [
+                    df.iloc[int(annotation["end"] * sample_rate):int(y_user.iloc[i + 1:i + 2]["start"] * sample_rate)]
+                    for i, annotation in y_user.iterrows() if i < len(y_user) - 1]
+    return chunks, null_chunks, y
 
 
 def get_random_aligned_test_file():
