@@ -85,11 +85,11 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
                 raise ValueError("no offset specified for the given hand", hand)
 
         if offset:
-            offset_index = data_frame.iloc[(data_frame[timestamp_column_name]-float(offset)).abs().argsort()[:1]].index.tolist()[0]
-            data_frame = data_frame.iloc[offset_index:,:]
+            offset_index = data_frame.iloc[(data_frame[timestamp_column_name] - float(offset)).abs().argsort()[:1]].index.tolist()[0]
+            data_frame = data_frame.iloc[offset_index:, :]
         data_frame = set_time_delta_as_index(data_frame, origin_timestamp_unit='s',
-                                output_timestamp_unit="milliseconds",
-                                timestamp_key=timestamp_column_name)
+                                             output_timestamp_unit="milliseconds",
+                                             timestamp_key=timestamp_column_name)
         data_frame.sort_index(inplace=True)
         # we either have multiple data frames for different hands or just one that we can return right away
         if hand:

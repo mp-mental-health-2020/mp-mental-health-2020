@@ -59,6 +59,12 @@ def get_specific_indoor_recording():
     return file_handling.read_json_file(random_file)
 
 
+def get_file_as_data_frame(file_path):
+    recording = file_handling.read_json_file(file_path)
+    packets = recording["advertisingPacketList"]
+    return pd.DataFrame(packets, columns=COLUMNS)
+
+
 def get_recording_as_data_frame(recording):
     packets = recording["advertisingPacketList"]
     return pd.DataFrame(packets, columns=COLUMNS)

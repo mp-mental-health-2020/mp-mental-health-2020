@@ -12,7 +12,10 @@ def align_data(data_frame, interpolation_method='linear', listening_rate=20, ref
     Parameters
     ----------
     data_frame
-    interpolation_method
+    interpolation_method : str, default='linear'
+        Specifies the kind of interpolation as a string ('linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next',
+        where 'zero', 'slinear', 'quadratic' and 'cubic' refer to a spline interpolation of zeroth, first, second or third order; 'previous' and
+        'next' simply return the previous or next value of the point).
     listening_rate
     reference_sensor:
         if None, then only do interpolation on the whole dataframe

@@ -17,7 +17,7 @@ def segment_windows(chunks, classes, window_size):
     new_chunks = []
     labels = []
     indices = []
-    for c,l in zip(chunks,classes):
+    for c, l in zip(chunks, classes):
         for i in range(0, int(len(c) / window_size)):
             # TODO: test if samples shorter than window_size are removed
             c_new = c[i * window_size:(i + 1) * window_size]

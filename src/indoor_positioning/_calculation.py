@@ -9,38 +9,50 @@ import math
 import numpy as np
 import pandas as pd
 
-from src.indoor_positioning import get_recording_as_data_frame, get_specific_indoor_recording
+import file_handling
+from src.indoor_positioning import get_file_as_data_frame, get_recording_as_data_frame, get_specific_indoor_recording
 
 
-def test_proximity():
+def test_get_beacons_for_proximity_approach():
     recording = get_specific_indoor_recording()
     df = get_recording_as_data_frame(recording)
 
-    # filter out incorrect placed beacons
-    df = df[df["minor"] != 2]
-
-    grouped = df.groupby(["major", "minor"])
-    series = df["timestamp"]
-    start_timestamp = series.min()
-    df = grouped.apply(batch_data, duration=1000, start_timestamp=start_timestamp)
-
-    # merge batches with identical timestamp by using the maximum rssi value -> strongest signal
-    df2 = df.groupby(["timestamp"])["rssi"].max()
-    df2 = df2.to_frame().reset_index()
-    df = df.merge(df2, how="right", on=["timestamp", "rssi"])
-    df.sort_values(by="timestamp", inplace=True)
-
-    print()
-
-
-def test_proximity_multi_beacons():
-    recording = get_specific_indoor_recording()
-    df = get_recording_as_data_frame(recording)
-
-    # TODO: Remove
     # filter out incorrect placed beacons
     df = df[df["minor"] != 2]
     df = df[df["minor"] != 10]
+
+    new_df = get_beacons_for_proximity_approach(df)
+    print()
+
+
+def get_beacons_for_proximity_approach(df, duration=1000, aggregation_function="mean"):
+    grouped = df.groupby(["major", "minor"])
+    series = df["timestamp"]
+    start_timestamp = series.min()
+
+    df = grouped.apply(batch_data, duration=duration, start_timestamp=start_timestamp, aggregation_function=aggregation_function)
+    # TODO: sort by
+    # merge batches with identical timestamp by using the maximum rssi value -> strongest signal
+
+    # TODO: remove debugging stuff
+    number_of_distinct_timestamps = df["timestamp"].unique()
+
+    df2 = df.groupby(["timestamp"])["rssi"].max()
+    df2 = df2.to_frame().reset_index()
+    df = df.merge(df2, how="right", on=["timestamp", "rssi"])
+    df.drop("major", axis=1, inplace=True)
+    df.sort_values(by="timestamp", inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    return df
+
+
+def get_multiple_beacons_for_proximity_approach():
+    recording = get_specific_indoor_recording()
+    df = get_recording_as_data_frame(recording)
+
+    # filter out incorrect placed beacons
+    # df = df[df["minor"] != 2]
+    # df = df[df["minor"] != 10]
 
     grouped = df.groupby(["major", "minor"])
     series = df["timestamp"]
@@ -64,7 +76,7 @@ def test_proximity_multi_beacons():
     new_df.drop("major", axis=1, inplace=True)
     new_df.sort_values(by="timestamp", inplace=True)
     new_df.reset_index(inplace=True, drop=True)
-    print()
+    return new_df
 
 
 def batch_data(df: pd.DataFrame, start_timestamp=None, duration=500, aggregation_function="mean"):
@@ -165,3 +177,45 @@ def get_room(minor):
 
 
 # Fingerprinting
+
+
+def test_duration():
+    start = 1593784111687
+    end = 1593785187858
+    first = 1593784111733
+    last = 1593785187852
+    print(((end - start) / 1000) / 60)
+    print(first - start)
+    print(end - last)
+
+
+def test_visualize_recordings():
+    experiment_dir_path = "../../data/phyphox/full recordings/"
+    experiment_dirs = file_handling.get_sub_directories(experiment_dir_path)
+    for directory in experiment_dirs:
+        # if "duration" not in directory:
+        #    continue
+        try:
+            if "ariane" in directory.lower():
+                indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
+                indoor_data_frame = get_file_as_data_frame(indoor_file)
+                visualize_rssi_values(indoor_data_frame)
+        except IndexError:
+            # we don't have an indoor recording for this recording session
+            pass
+
+
+def test_visualize():
+    recording = get_specific_indoor_recording()
+    df = get_recording_as_data_frame(recording)
+    visualize_rssi_values(df)
+
+
+def visualize_rssi_values(df):
+    import matplotlib.pyplot
+    start_timestamp = df["timestamp"].get_values()[0]
+    indices = df["timestamp"] - start_timestamp
+    indices /= 1000
+    indices /= 60
+    matplotlib.pyplot.plot(indices, df["rssi"])
+    matplotlib.pyplot.show()
