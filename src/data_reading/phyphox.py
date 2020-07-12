@@ -195,8 +195,8 @@ def get_indoor_data(directory, sample_rate):
         indoor_data_frame.sort_index(inplace=True)
 
         # TODO: filter out minor 2 and 10 for now -> this is only needed for some recordings and should be handled differently
-        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor" != 2]]
-        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor" != 10]]
+        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 2]
+        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 10]
 
         return align_data(indoor_data_frame, interpolation_method="previous", listening_rate=1000 / sample_rate,
                           reference_sensor=None)

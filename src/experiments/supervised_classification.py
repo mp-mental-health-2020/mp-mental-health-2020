@@ -47,10 +47,10 @@ def run_supervised_classification(experiment_dir_path):
     del chunks_null_class
 
     # TODO: remove this
-    chunks_ocd_segmented = chunks_ocd_segmented[:20]
-    labels_ocd_segmented = labels_ocd_segmented[:20]
-    chunks_null_segmented = chunks_null_segmented[:20]
-    labels_null_segmented = labels_null_segmented[:20]
+    chunks_ocd_segmented = chunks_ocd_segmented[:10]
+    labels_ocd_segmented = labels_ocd_segmented[:10]
+    chunks_null_segmented = chunks_null_segmented[:10]
+    labels_null_segmented = labels_null_segmented[:10]
 
     # for the feature extraction we need all of our data in one concatenated df - tsfresh groups by segment id
     null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
@@ -68,7 +68,7 @@ def run_supervised_classification(experiment_dir_path):
 
     action_ids = null_classification_df["action_id"].values
 
-    X_null_classification = extract_timeseries_features(null_classification_df)
+    X_null_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor)
 
     print("Finished feature extraction")
 
@@ -87,9 +87,3 @@ def run_supervised_classification(experiment_dir_path):
 
 def test_run_short_recordings_clf():
     run_supervised_classification("../../data/phyphox/full recordings/")
-
-
-def test_df():
-    df_1 = pd.DataFrame(data=[[1, 2, 5], [3, 4, 6]], columns=["a", "b", "c"])
-    df_2 = df_1.loc[:, ["a", "c"]]
-    print()

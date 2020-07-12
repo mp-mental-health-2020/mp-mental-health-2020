@@ -16,16 +16,20 @@ def extract_indoor_feature(data_frame, column_id="action_id"):
     data_frame.pop("rssi")
     data_frame.pop("minor")
     indoor_df = indoor_df.groupby(column_id).apply(merge_indoor_values)
-    indoor_df.columns = ["minor", "rssi"]
     return indoor_df
 
 
 def merge_indoor_values(grouped_data):
     # find most consistent beacon
     counts = grouped_data["minor"].value_counts()
-    most_frequent_minor = counts.max()
+    most_frequent_minor = counts.sort_values(ascending=False).index[0]
 
     # aggregate beacon signal strength values
-    highest_rssi = grouped_data[grouped_data["minor"] == most_frequent_minor]["rssi"].max()
-    result = pd.Series(data=[most_frequent_minor, highest_rssi])
+    filter_minor = grouped_data[grouped_data["minor"] == most_frequent_minor]
+    highest_rssi = filter_minor["rssi"].max()
+    try:
+        result = pd.DataFrame(data=[[most_frequent_minor, highest_rssi]], columns=["minor", "rssi"])
+    except KeyError:
+        # Bug: one entry is missing action_id -> not sure why for now
+        return pd.DataFrame([], columns=["minor", "rssi"])
     return result
