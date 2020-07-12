@@ -3,6 +3,9 @@ from random import sample
 
 import pandas as pd
 
+import file_handling
+from indoor_positioning import get_beacons_for_proximity_approach, get_file_as_data_frame
+from preprocessing import align_data
 from src import preprocessing
 from src.file_handling import get_file_names_in_directory_for_pattern, get_project_directory
 from src.preprocessing import set_time_delta_as_index
@@ -50,7 +53,7 @@ def filter_files(file_names, sensors):
     return filtered_files
 
 
-def read_experiment(experiment_path, sensors=None, offsets=None):
+def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=True):
     """
     Read in the data of the experiment given by the path. Used sensors cna be adjusted by specifying the 'sensors' parameter.
 
@@ -62,6 +65,7 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
         List of sensor names that should be included in the data frame. If None, all available ones will be included.
     offsets: dict or None
         if dict then we provide the offsets for each file - the last part of the file name will be associated with the offsets for each hand
+    drop_lin_acc: bool that indicates if the linear acceleration should be considered
     Returns
     -------
         pd.DataFrame for all (specified) sensors with an sorted pd.TimeDeltaIndex. May contain 'NaN' values if sensors are not in sync.
@@ -74,6 +78,13 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
     data_frames = {}
     for file_name in file_names:
         data_frame = pd.read_csv(file_name)
+
+        # drop the linear acceleration columns here
+        if drop_lin_acc:
+            data_frame.drop(columns=["linear_acceleration x", "linear_acceleration y", "linear_acceleration z"], inplace=True)
+            # columns: timestamp, 3 x acceleration, 3 x gyro
+            assert len(data_frame.columns) == 7
+
         offset = None
         hand = file_name.replace(".csv", "").split("_")[-1]
         hand = hand if hand in ["left", "right"] else None
@@ -97,6 +108,101 @@ def read_experiment(experiment_path, sensors=None, offsets=None):
         else:
             return data_frame
     return data_frames
+
+
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True):
+    """
+
+    Parameters
+    ----------
+    experiment_dirs
+    sample_rate
+
+    Returns a triple of chunks, null_chunks and the classes for the chunks
+    -------
+
+    """
+    chunks = {"right": [], "left": []}
+    null_chunks = {"right": [], "left": []}
+    if require_indoor:
+        chunks["indoor"] = []
+        null_chunks["indoor"] = []
+    y_columns = ["start", "end", "label", "hand"]
+    y = pd.DataFrame(columns=y_columns)
+
+    for directory in experiment_dirs:
+        offsets = {}
+        try:
+            with open(directory + "/offset.txt") as f:
+                for line in f:
+                    (key, val) = line.split(": ")
+                    offsets[key.lower()] = val
+        except FileNotFoundError:
+            print("No offset file available in {}".format(directory))
+            continue
+
+        data_frames = read_experiment(directory, offsets=offsets, drop_lin_acc=drop_lin_acc)
+
+        data_frames = {key: align_data(data_frame, listening_rate=1000 / sample_rate, reference_sensor=None) for
+                       key, data_frame in data_frames.items()}
+
+        if require_indoor:
+            indoor_data = get_indoor_data(directory, sample_rate)
+            if indoor_data is None:
+                continue
+            data_frames["indoor"] = indoor_data
+
+        # get relevant data from action annotations
+        y_actions = pd.read_csv(directory + "/annotations.tsv", delimiter="\t", header=None)
+        y_actions = y_actions.iloc[:, [3, 5, 8]]
+
+        # get relevant data from hand annotations
+        y_hands = pd.read_csv(directory + "/hands.tsv", delimiter="\t", header=None)
+        y_hands = y_hands.iloc[:, [8]]
+
+        # combine labels
+        y_current = pd.concat([y_actions, y_hands], axis=1)
+        y_current.columns = y_columns
+
+        y = y.append(y_current)
+
+        # iterate over the annotations and split the timeseries in chunks
+        for key, df in data_frames.items():
+            if key in chunks:
+                chunks[key] += [df.iloc[int(annotation["start"] * sample_rate):int(annotation["end"] * sample_rate)] for i, annotation in
+                                y_current.iterrows()]
+                # null chunks are everything in between annotations
+                null_chunks[key] += [df.iloc[int(annotation["end"] * sample_rate):int(y_current.iloc[i + 1:i + 2]["start"] * sample_rate)] for
+                                     i, annotation in y_current.iterrows() if i < len(y_current) - 1]
+        break  # TODO: remove this break
+    return chunks, null_chunks, y
+
+
+def get_indoor_data(directory, sample_rate):
+    try:
+        indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
+        indoor_data_frame = get_file_as_data_frame(indoor_file)
+
+        # filter out incorrect placed beacons
+        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 2]
+        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 10]
+
+        new_df = get_beacons_for_proximity_approach(indoor_data_frame)
+        indoor_data_frame = new_df
+        indoor_data_frame = set_time_delta_as_index(indoor_data_frame, origin_timestamp_unit='ms',
+                                                    output_timestamp_unit="milliseconds",
+                                                    timestamp_key="timestamp")
+        indoor_data_frame.sort_index(inplace=True)
+
+        # TODO: filter out minor 2 and 10 for now -> this is only needed for some recordings and should be handled differently
+        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor" != 2]]
+        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor" != 10]]
+
+        return align_data(indoor_data_frame, interpolation_method="previous", listening_rate=1000 / sample_rate,
+                          reference_sensor=None)
+    except IndexError:
+        # we don't have an indoor recording for this recording session
+        return None
 
 
 def get_random_aligned_test_file():

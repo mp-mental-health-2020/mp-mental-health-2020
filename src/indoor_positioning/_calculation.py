@@ -31,12 +31,10 @@ def get_beacons_for_proximity_approach(df, duration=1000, aggregation_function="
     start_timestamp = series.min()
 
     df = grouped.apply(batch_data, duration=duration, start_timestamp=start_timestamp, aggregation_function=aggregation_function)
+
     # TODO: sort by
+
     # merge batches with identical timestamp by using the maximum rssi value -> strongest signal
-
-    # TODO: remove debugging stuff
-    number_of_distinct_timestamps = df["timestamp"].unique()
-
     df2 = df.groupby(["timestamp"])["rssi"].max()
     df2 = df2.to_frame().reset_index()
     df = df.merge(df2, how="right", on=["timestamp", "rssi"])

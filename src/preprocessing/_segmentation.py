@@ -28,3 +28,29 @@ def segment_windows(chunks, classes, window_size):
             new_chunks.append(c_new)
     label_series = pd.Series(labels, index=indices)
     return new_chunks, label_series
+
+
+def segment_null_classification(chunks_ocd, chunks_null_class, window_size):
+    """
+
+    Parameters
+    ----------
+    chunks_ocd
+    chunks_null_class
+    window_size
+
+    Returns segmented chunks and labels for ocd and null class chunks
+    -------
+
+    """
+    # new label for ocd activities
+    labels_ocd_acts = pd.Series(["OCD activity"] * len(chunks_ocd))
+    assert len(chunks_ocd[0].columns) == len(chunks_null_class[0].columns)
+    chunks_ocd_segmented, labels_ocd_segmented = segment_windows(chunks_ocd, labels_ocd_acts.to_numpy(), window_size)
+
+    null_labels = pd.Series(["null class"] * len(chunks_null_class))
+    chunks_null_segmented, labels_null_segmented = segment_windows(chunks_null_class, null_labels.to_numpy(),
+                                                                   window_size)
+
+    # TODO: do we really need to return the labels here?
+    return chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented
