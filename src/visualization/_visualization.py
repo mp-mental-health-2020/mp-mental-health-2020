@@ -34,15 +34,12 @@ def swarm_plot_top_features(data):
 
 def pca_2d(X, y, targets, colors):
     from sklearn.decomposition import PCA
-    import pandas as pd
     pca = PCA(n_components=2)
     principalComponents = pca.fit_transform(X)
     principalDf = pd.DataFrame(data=principalComponents
                                , columns=['principal component 1', 'principal component 2'])
     finalDf = pd.concat([principalDf, y.reset_index(drop=True)], axis=1)
     finalDf.columns = ['principal component 1', 'principal component 2', 'target']
-
-    import matplotlib.pyplot as plt
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(1, 1, 1)
@@ -61,15 +58,12 @@ def pca_2d(X, y, targets, colors):
 
 def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.decomposition import PCA
-    import pandas as pd
     pca = PCA(n_components=3)
     principalComponents = pca.fit_transform(X)
     principalDf = pd.DataFrame(data=principalComponents
                                , columns=['principal component 1', 'principal component 2', 'principal component 3'])
     finalDf = pd.concat([principalDf, y.reset_index(drop=True)], axis=1)
     finalDf.columns = ['principal component 1', 'principal component 2', 'principal component 3', 'target']
-
-    import matplotlib.pyplot as plt
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -89,15 +83,12 @@ def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
 
 def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n_iter=5000, perplexity=25):
     from sklearn.manifold import TSNE
-    import pandas as pd
     sne = TSNE(n_components=2, n_iter=n_iter, perplexity=perplexity)
     sne_components = sne.fit_transform(X)
     sne_df = pd.DataFrame(data=sne_components
                           , columns=['principal component 1', 'principal component 2'])
     sne_finalDf = pd.concat([sne_df, y.reset_index(drop=True)], axis=1)
     sne_finalDf.columns = ['principal component 1', 'principal component 2', 'target']
-
-    import matplotlib.pyplot as plt
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(1, 1, 1)
@@ -115,15 +106,12 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
 
 def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n_iter=5000, perplexity=25):
     from sklearn.manifold import TSNE
-    import pandas as pd
     sne = TSNE(n_components=3, n_iter=n_iter, perplexity=perplexity)
     sne_components = sne.fit_transform(X)
     sne_df = pd.DataFrame(data=sne_components
                           , columns=['principal component 1', 'principal component 2', 'principal component 3'])
     sne_finalDf = pd.concat([sne_df, y.reset_index(drop=True)], axis=1)
     sne_finalDf.columns = ['principal component 1', 'principal component 2', 'principal component 3', 'target']
-
-    import matplotlib.pyplot as plt
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
