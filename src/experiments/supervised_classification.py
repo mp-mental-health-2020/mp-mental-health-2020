@@ -11,7 +11,7 @@ from preprocessing._chunk_preparation import preprocess_chunks_for_null_test, co
 from preprocessing._segmentation import segment_null_classification
 
 
-def run_supervised_classification(experiment_dir_path):
+def run_binary_classification(experiment_dir_path):
     experiment_dirs = get_sub_directories(experiment_dir_path)
 
     # Read data
@@ -59,7 +59,7 @@ def run_supervised_classification(experiment_dir_path):
 
 
 def test_run_short_recordings_clf():
-    run_supervised_classification("../../data/phyphox/short recordings/")
+    run_binary_classification("../../data/phyphox/short recordings/")
 
 
 run_supervised_classification("../../data/phyphox/short recordings/")

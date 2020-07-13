@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+import pandas as pd
 
 
 def plot_duration_histogram(chunks):
@@ -20,6 +22,14 @@ def plot_duration_histogram(chunks):
     plt.ylabel("# of samples")
     plt.legend()
     plt.show()
+
+
+def swarm_plot_top_features(data):
+    sns.set(style="whitegrid", palette="muted")
+    data = pd.melt(data, id_vars=["index", "class"], var_name="features")
+    print(data.head())
+    plt.figure(figsize=(25,10))
+    sns.swarmplot(x="features", y="value", hue="class", data=data)
 
 
 def pca_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
@@ -47,6 +57,7 @@ def pca_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
                    , c=color)
     ax.legend(targets)
     ax.grid()
+
 
 def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.decomposition import PCA
@@ -77,6 +88,7 @@ def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     ax.grid()
     # plot.show()
 
+
 def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.manifold import TSNE
     import pandas as pd
@@ -102,6 +114,7 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
                    , c=color)
     ax.legend(targets)
     ax.grid()
+
 
 def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.manifold import TSNE
