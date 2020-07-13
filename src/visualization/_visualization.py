@@ -22,7 +22,7 @@ def plot_duration_histogram(chunks):
     plt.show()
 
 
-def pca_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
+def pca_2d(X, y, targets, colors):
     from sklearn.decomposition import PCA
     import pandas as pd
     pca = PCA(n_components=2)
@@ -75,12 +75,11 @@ def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
                    , c=color)
     ax.legend(targets)
     ax.grid()
-    # plot.show()
 
-def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
+def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n_iter=5000, perplexity=25):
     from sklearn.manifold import TSNE
     import pandas as pd
-    sne = TSNE(n_components=2, n_iter=5000, perplexity=25)
+    sne = TSNE(n_components=2, n_iter=n_iter, perplexity=perplexity)
     sne_components = sne.fit_transform(X)
     sne_df = pd.DataFrame(data=sne_components
                           , columns=['principal component 1', 'principal component 2'])
@@ -103,10 +102,10 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     ax.legend(targets)
     ax.grid()
 
-def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
+def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n_iter=5000, perplexity=25):
     from sklearn.manifold import TSNE
     import pandas as pd
-    sne = TSNE(n_components=3, n_iter=5000, perplexity=25)
+    sne = TSNE(n_components=3, n_iter=n_iter, perplexity=perplexity)
     sne_components = sne.fit_transform(X)
     sne_df = pd.DataFrame(data=sne_components
                           , columns=['principal component 1', 'principal component 2', 'principal component 3'])
@@ -130,4 +129,3 @@ def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
                    , c=color)
     ax.legend(targets)
     ax.grid()
-    # plot.show()
