@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
 from tsfresh.utilities.dataframe_functions import impute
@@ -6,17 +7,21 @@ from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
-
-from preprocessing._chunk_preparation import preprocess_chunks_for_null_test, concat_chunks_for_feature_extraction
-from preprocessing._segmentation import segment_null_classification
+from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, preprocess_chunks_for_null_test_with_indoor, \
+    segment_null_classification
 
 
 def run_binary_classification(experiment_dir_path):
     experiment_dirs = get_sub_directories(experiment_dir_path)
 
     # Read data
+    use_indoor = True
     sample_rate = 50
-    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=False)
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=False, require_indoor=use_indoor)
+
+    del experiment_dir_path
+    del experiment_dirs
+
     # TODO: add assertions
     print("Finished reading data")
 
@@ -25,12 +30,21 @@ def run_binary_classification(experiment_dir_path):
 
     # Preprocess data
 
-    chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks)
+    if use_indoor:
+        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks)
+    else:
+        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks)
 
+    del chunks
+    del null_chunks
     # Segmentation
 
-    window_size = 50 # 1 second
-    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(chunks_ocd, chunks_null_class, window_size)
+    window_size = 50  # 1 second
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(chunks_ocd,
+                                                                                                                           chunks_null_class,
+                                                                                                                           window_size)
+    del chunks_ocd
+    del chunks_null_class
 
     # for the feature extraction we need all of our data in one concatenated df - tsfresh groups by segment id
     null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
@@ -41,7 +55,7 @@ def run_binary_classification(experiment_dir_path):
     print("Finished data preparation and segmentation")
     # Feature extraction
 
-    X_null_classification = extract_timeseries_features(null_classification_df)
+    X_null_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor)
 
     print("Finished feature extraction")
 
