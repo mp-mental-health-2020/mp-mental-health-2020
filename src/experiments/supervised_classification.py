@@ -46,27 +46,14 @@ def run_supervised_classification(experiment_dir_path):
     del chunks_ocd
     del chunks_null_class
 
-    # TODO: remove this
-    chunks_ocd_segmented = chunks_ocd_segmented[:10]
-    labels_ocd_segmented = labels_ocd_segmented[:10]
-    chunks_null_segmented = chunks_null_segmented[:10]
-    labels_null_segmented = labels_null_segmented[:10]
-
     # for the feature extraction we need all of our data in one concatenated df - tsfresh groups by segment id
     null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
         [chunks_ocd_segmented, chunks_null_segmented],
         [labels_ocd_segmented, labels_null_segmented])
     assert len(set(labels_null_classification)) == 2
 
-    del chunks_ocd_segmented
-    del chunks_null_segmented
-    del labels_ocd_segmented
-    del labels_null_segmented
-
     print("Finished data preparation and segmentation")
     # Feature extraction
-
-    action_ids = null_classification_df["action_id"].values
 
     X_null_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor)
 
