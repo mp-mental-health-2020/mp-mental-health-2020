@@ -5,7 +5,7 @@ import warnings
 import pandas as pd
 
 from src import file_handling
-from src.file_handling import get_project_directory
+from src.file_handling import get_project_directory, get_sub_directories
 
 # Example json:
 # {
@@ -83,3 +83,33 @@ def map_major(major):
     else:
         warnings.warn("Location for major {} is unknown. Please add it to the mapping.".format(major))
         return "Unknown Location"
+
+
+def visualize_beacon_data_to_find_offset(df, minor=9, directory=None):
+    import matplotlib.pyplot
+    # get data for specific beacon
+    start_timestamp = df["timestamp"].get_values()[0]
+    df = df[df["minor"] == minor]
+    df = df[df["rssi"] >= -55]
+    df["timestamp"] -= start_timestamp
+    df["timestamp"] /= 1000
+
+    if not df.empty:
+        indices = df["timestamp"]
+        # indices /= 1000
+        # indices /= 60
+        matplotlib.pyplot.plot(indices, df["rssi"])
+        # matplotlib.pyplot.show()
+
+
+def test_get_offset_for_indoor():
+    experiment_dirs = get_sub_directories("../../data/phyphox/full recordings/")
+    for directory in experiment_dirs:
+        if any([user in directory for user in ["Hung", "Julian", "Ana-2", "Wiktoria", "Ariane"]]):
+            files = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")
+            if not files:
+                continue
+            print(directory)
+            indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
+            indoor_data_frame = get_file_as_data_frame(indoor_file)
+            visualize_beacon_data_to_find_offset(indoor_data_frame, directory=directory)

@@ -147,7 +147,7 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
                        key, data_frame in data_frames.items()}
 
         if require_indoor:
-            indoor_data = get_indoor_data(directory, sample_rate)
+            indoor_data = get_indoor_data(directory, sample_rate, offsets=offsets)
             if indoor_data is None:
                 continue
             data_frames["indoor"] = indoor_data
@@ -174,14 +174,21 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
                 # null chunks are everything in between annotations
                 null_chunks[key] += [df.iloc[int(annotation["end"] * sample_rate):int(y_current.iloc[i + 1:i + 2]["start"] * sample_rate)] for
                                      i, annotation in y_current.iterrows() if i < len(y_current) - 1]
-        break  # TODO: remove this break
     return chunks, null_chunks, y
 
 
-def get_indoor_data(directory, sample_rate):
+def get_indoor_data(directory, sample_rate, offsets=None):
     try:
         indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
         indoor_data_frame = get_file_as_data_frame(indoor_file)
+
+        # synchronization
+        if offsets and "indoor" in offsets.keys():
+            offset = float(offsets["indoor"])
+            start_timestamp = indoor_data_frame["timestamp"][0]
+            # offset is save in seconds
+            synchronized_start_timestamp = start_timestamp + offset * 1000
+            indoor_data_frame = indoor_data_frame[indoor_data_frame["timestamp"] >= synchronized_start_timestamp]
 
         # filter out incorrect placed beacons
         indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 2]
@@ -194,13 +201,9 @@ def get_indoor_data(directory, sample_rate):
                                                     timestamp_key="timestamp")
         indoor_data_frame.sort_index(inplace=True)
 
-        # TODO: filter out minor 2 and 10 for now -> this is only needed for some recordings and should be handled differently
-        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 2]
-        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 10]
-
         return align_data(indoor_data_frame, interpolation_method="previous", listening_rate=1000 / sample_rate,
                           reference_sensor=None)
-    except IndexError:
+    except IndexError as e:
         # we don't have an indoor recording for this recording session
         return None
 
