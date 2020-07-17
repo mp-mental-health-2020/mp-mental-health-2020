@@ -3,10 +3,9 @@ from tsfresh import extract_features
 
 
 def extract_timeseries_features(timeseries, use_indoor):
-    if use_indoor:
-        indoor_features = extract_indoor_feature(timeseries, column_id='action_id')
     features = extract_features(timeseries, column_id='action_id')
     if use_indoor:
+        indoor_features = extract_indoor_feature(timeseries, column_id='action_id')
         features.merge(indoor_features, right_index=True, left_index=True)
     return features
 
