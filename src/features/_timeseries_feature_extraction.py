@@ -3,10 +3,12 @@ import tsfresh
 from tsfresh import extract_features
 
 
-def extract_timeseries_features(timeseries, use_indoor, feature_set_config=tsfresh.feature_extraction.settings.ComprehensiveFCParameters):
-    features = extract_features(timeseries, column_id='action_id', default_fc_parameters=feature_set_config)
+def extract_timeseries_features(timeseries, use_indoor, feature_set_config=tsfresh.feature_extraction.settings.ComprehensiveFCParameters()):
     if use_indoor:
         indoor_features = extract_indoor_feature(timeseries, column_id='action_id')
+        timeseries.drop(["rssi", "minor"], axis=1, inplace=True)
+    features = extract_features(timeseries, column_id='action_id', default_fc_parameters=feature_set_config)
+    if use_indoor:
         features.merge(indoor_features, right_index=True, left_index=True)
     return features
 
@@ -19,8 +21,6 @@ def extract_indoor_feature(data_frame, column_id="action_id"):
     return minors
     # work around to prevent indoor feature extraction from crashing:
     # return only the minor and drop the rssi
-    data_frame.pop("rssi")
-    data_frame.pop("minor")
     indoor_df = indoor_df.groupby(column_id).apply(merge_indoor_values)
     return indoor_df
 

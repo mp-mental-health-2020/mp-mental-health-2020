@@ -1,4 +1,3 @@
-import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
 from tsfresh.utilities.dataframe_functions import impute
