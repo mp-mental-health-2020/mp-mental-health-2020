@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-back:   14.500
-left:   25.500
-right:  18.600
-=======
 back:   14.500
 left:   25.500
 right:  18.600
 indoor: 7.864
->>>>>>> feature/integrate-indoor-positioning
