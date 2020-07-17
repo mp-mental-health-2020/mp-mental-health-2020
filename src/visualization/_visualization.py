@@ -94,7 +94,7 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel('Principal Component 1', fontsize=15)
     ax.set_ylabel('Principal Component 2', fontsize=15)
-    ax.set_title('2 component PCA', fontsize=20)
+    ax.set_title('2 component SNE', fontsize=20)
 
     for target, color in zip(targets, colors):
         indicesToKeep = sne_finalDf['target'] == target
