@@ -115,12 +115,27 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
 
     Parameters
     ----------
-    experiment_dirs
-    sample_rate
+    experiment_dirs : array-like
+        List of all recording subdirectories which should be used for the current run.
+    sample_rate : int
+        Sample rate used for interpolating the data.
+    drop_lin_acc : boolean, default=True
+        If True, linear acceleration is not used for this run.
+    require_indoor : boolean, default=True
+        If True, it requires the recording directories to contain indoor positioning recordings.
 
-    Returns a triple of chunks, null_chunks and the classes for the chunks
+    Returns
     -------
-
+        chunks : dict
+            Contains keys for the data used:
+                'left' and 'right' for the sensor data of the respective hands
+                'indoor' for the beacon advertising data
+            Each value contains a lists of data frames for the respective times when activities where performed in the recording. Each list entry
+            is one activity.
+        null_chucks : dict
+            Same as 'chunks' but with the data for when no activity was performed.
+        y : pd.DataFrame
+            DataFrame containing the labels for the activities performed and their respective hands.
     """
     chunks = {"right": [], "left": []}
     null_chunks = {"right": [], "left": []}
@@ -178,6 +193,25 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
 
 
 def get_indoor_data(directory, sample_rate, offsets=None):
+    """
+    Gets the aggregated indoor positioning data from the given directory with synchronization performed, if given. Data will be aggregated to only
+    return the strongest beacon data in each chunk. This data will be interpolated to be at the given sample rate. Will return 'None' if no indoor
+    data could be found within the directory.
+
+    Parameters
+    ----------
+    directory : str
+        Path to the directory containing the data.
+    sample_rate : int
+        Requested frequency of data after interpolation in Hz.
+    offsets : dict, default=None
+        If supplied and it contains the 'indoor' key, the value will be used to remove the first few seconds of data for synchronization purposes.
+        Value is given in seconds.
+
+    Returns
+    -------
+        If data is available, returns pd.DataFrame with synchronized, aggregated and interpolated indoor positioning data. If not, returns None.
+    """
     try:
         indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
         indoor_data_frame = get_file_as_data_frame(indoor_file)
@@ -190,7 +224,11 @@ def get_indoor_data(directory, sample_rate, offsets=None):
             synchronized_start_timestamp = start_timestamp + offset * 1000
             indoor_data_frame = indoor_data_frame[indoor_data_frame["timestamp"] >= synchronized_start_timestamp]
 
+            # filter out synchronization beacon
+            indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 9]
+
         # filter out incorrect placed beacons
+        # TODO: remove this once the recordings are replaced
         indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 2]
         indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 10]
 
@@ -203,7 +241,7 @@ def get_indoor_data(directory, sample_rate, offsets=None):
 
         return align_data(indoor_data_frame, interpolation_method="previous", listening_rate=1000 / sample_rate,
                           reference_sensor=None)
-    except IndexError as e:
+    except IndexError:
         # we don't have an indoor recording for this recording session
         return None
 
