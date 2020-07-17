@@ -6,10 +6,11 @@ from tsfresh import extract_features
 def extract_timeseries_features(timeseries, use_indoor, feature_set_config=tsfresh.feature_extraction.settings.ComprehensiveFCParameters()):
     if use_indoor:
         indoor_features = extract_indoor_feature(timeseries, column_id='action_id')
-        timeseries.drop(["rssi", "minor"], axis=1, inplace=True)
+        timeseries = timeseries.drop(["rssi", "minor"], axis=1)
     features = extract_features(timeseries, column_id='action_id', default_fc_parameters=feature_set_config)
     if use_indoor:
-        features.merge(indoor_features, right_index=True, left_index=True)
+        features = features.merge(indoor_features, right_index=True, left_index=True)
+        assert "minor" in features.columns
     return features
 
 
