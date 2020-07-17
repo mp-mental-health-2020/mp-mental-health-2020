@@ -9,8 +9,8 @@ def merge_left_and_right_chunk(chunk_left, chunk_right, action_id, chunk_indoor=
     Parameters
     ----------
     chunk_left: dataframe containing chunk from left hand
-    chunk_right: dataframe containing chunk from left hand
-    chunk_right: dataframe containing chunk from indoor data
+    chunk_right: dataframe containing chunk from right hand
+    chunk_indoor: dataframe containing chunk from indoor data
     action_id: id of the action (not the activity)
     Returns a merged dataframe with only one action_id column
     -------
