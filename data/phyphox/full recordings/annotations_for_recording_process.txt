@@ -7,3 +7,5 @@ Beacon configuration:
 		- Estimote : 201
 	- TX-Power:
 		- -4
+
+Indoor-Positioning files of Ariane, Wiktoria, Ana-2, Julian and Hung use the Beacon with minor 19 for synchronization in the beginning and end while performing Jumping-Jacks (Beacon is placed on phone recording the indoor data)

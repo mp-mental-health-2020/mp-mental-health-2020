@@ -1,3 +1,4 @@
 back:  17.300
 left:  24.500
 right: 22.800
+indoor: 12.764
