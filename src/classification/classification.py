@@ -10,7 +10,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from xgboost import XGBClassifier;
+from xgboost import XGBClassifier
+from evaluation._evaluation import roc_curve_auc
 
 models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()),
           ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42)),
@@ -19,7 +20,7 @@ models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_c
 
 
 
-def classify_all(X, y, label_ids=None):
+def classify_all(X, y, label_ids=None, binary=False):
     for name, model in models:
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
@@ -36,5 +37,7 @@ def classify_all(X, y, label_ids=None):
             plt.figure(figsize=(10, 7))
             sn.heatmap(df_cm, annot=True)
             plt.show()
+        if binary:
+            roc_curve_auc(X, y, model)
 
 
