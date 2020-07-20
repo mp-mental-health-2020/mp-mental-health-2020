@@ -25,17 +25,20 @@ def classify_all(X, y, label_ids=None):
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
 
-        if label_ids:
-            # confusion matrix
-            y_pred = cross_val_predict(model, X, y, cv=8)
-            conf_mat = confusion_matrix(y, y_pred)
-            # print(conf_mat)
-            df_cm = pd.DataFrame(conf_mat, index=label_ids.keys(),
-                                 columns=label_ids.keys())
-            df_cm["sum"] = df_cm.sum(axis=1)
-            df_cm = df_cm.loc[:, label_ids.keys()].div(df_cm["sum"], axis=0)
-            plt.figure(figsize=(10, 7))
-            sn.heatmap(df_cm, annot=True)
-            plt.show()
+        #if label_ids:
+        # confusion matrix
+
+        y_pred = cross_val_predict(model, X, y, cv=8)
+
+        labels_set = set(y)
+        conf_mat = confusion_matrix(y, y_pred)
+        # print(conf_mat)
+        df_cm = pd.DataFrame(conf_mat, index=labels_set,
+                             columns=labels_set)
+        df_cm["sum"] = df_cm.sum(axis=1)
+        df_cm = df_cm.loc[:, labels_set].div(df_cm["sum"], axis=0)
+        plt.figure(figsize=(10, 7))
+        sn.heatmap(df_cm, annot=True, fmt='g')
+        plt.show()
 
 

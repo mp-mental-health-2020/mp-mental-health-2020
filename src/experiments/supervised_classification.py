@@ -1,6 +1,6 @@
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
-from tsfresh.feature_extraction import MinimalFCParameters
+from tsfresh.feature_extraction import MinimalFCParameters, EfficientFCParameters
 from tsfresh.utilities.dataframe_functions import impute
 import pandas as pd
 
@@ -91,15 +91,18 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     classify_all(X_multi_class_classification_scaled, labels_multi_class_classification)
 
 
+    # TODO: store in file
+
 def test_run_multiclass_recordings_clf():
     experiment_dir_path = "../../data/phyphox/full recordings/"
+    # Ana-2, Ariane, Julian, Wiki
+    experiment_dirs_selected = ["Ana-2", "Ariane", "Julian", "Wiktoria"]
+
     use_indoor = True
     window_size = 50
     # MinimalFCParameters, ComprehensiveFCParameters, EfficientFCParameters
     feature_calculation_setting = MinimalFCParameters()
 
-    # Ana-2, Ariane, Julian, Wiki
-    experiment_dirs_selected = ["Ana-2", "Ariane", "Julian", "Wiktoria"]
 
     run_multiclass_classification(experiment_dir_path=experiment_dir_path,
                                   experiment_dirs_selected=experiment_dirs_selected,
@@ -107,3 +110,64 @@ def test_run_multiclass_recordings_clf():
                                   feature_calculation_setting=feature_calculation_setting,
                                   window_size=window_size)
 
+experiment_dir_path = "../../data/phyphox/full recordings/"
+# Ana-2, Ariane, Julian, Wiki
+experiment_dirs_selected = ["Ana-2", "Ariane", "Julian", "Wiktoria"]
+feature_calculation_setting_min = MinimalFCParameters()
+feature_calculation_setting_efficient = EfficientFCParameters()
+
+# min, indoor, 50
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=True,
+                                  feature_calculation_setting=feature_calculation_setting_min,
+                                  window_size=50)
+
+# min, no indoor, 50
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=False,
+                                  feature_calculation_setting=feature_calculation_setting_min,
+                                  window_size=50)
+
+# min, indoor, 100
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=True,
+                                  feature_calculation_setting=feature_calculation_setting_min,
+                                  window_size=100)
+
+# min, no indoor, 100
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=False,
+                                  feature_calculation_setting=feature_calculation_setting_min,
+                                  window_size=100)
+
+# efficient, indoor, 50
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=True,
+                                  feature_calculation_setting=feature_calculation_setting_efficient,
+                                  window_size=50)
+
+# efficient, no indoor, 50
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=False,
+                                  feature_calculation_setting=feature_calculation_setting_efficient,
+                                  window_size=50)
+
+# efficient, indoor, 100
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=True,
+                                  feature_calculation_setting=feature_calculation_setting_efficient,
+                                  window_size=100)
+
+# efficient, no indoor, 100
+run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=False,
+                                  feature_calculation_setting=feature_calculation_setting_efficient,
+                                  window_size=100)
