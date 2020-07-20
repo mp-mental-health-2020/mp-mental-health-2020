@@ -20,7 +20,7 @@ models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_c
 
 
 
-def classify_all(X, y, label_ids=None):
+def classify_all(X, y):
     for name, model in models:
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
