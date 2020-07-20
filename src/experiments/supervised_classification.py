@@ -87,7 +87,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     scaler = StandardScaler()
     X_multi_class_classification_scaled = scaler.fit_transform(X_multi_class_classification_selected)
 
-    print("Multi class classification: using indoor: {}; FC params: {}; window_size".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
+    print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
     classify_all(X_multi_class_classification_scaled, labels_multi_class_classification)
 
 
