@@ -1,34 +1,35 @@
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
+from tsfresh.feature_extraction import MinimalFCParameters
 from tsfresh.utilities.dataframe_functions import impute
+import pandas as pd
 
 from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
-from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, preprocess_chunks_for_null_test_with_indoor, \
-    segment_null_classification
+from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
+    preprocess_chunks_for_null_test_with_indoor, \
+    segment_null_classification, segment_windows
+from visualization._visualization import swarm_plot_top_features
 
 
-def run_binary_classification(experiment_dir_path):
+def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
     experiment_dirs = get_sub_directories(experiment_dir_path)
-
+    experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
-    use_indoor = True
     sample_rate = 50
-    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=False, require_indoor=use_indoor)
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor)
 
     del experiment_dir_path
     del experiment_dirs
-
-    # TODO: add assertions
     print("Finished reading data")
 
     # we only need the y vector for the multi class clf
     y.reset_index(inplace=True)
+    labels = y.loc[:, "label"].squeeze()
 
     # Preprocess data
-
     if use_indoor:
         chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks)
     else:
@@ -38,41 +39,71 @@ def run_binary_classification(experiment_dir_path):
     del null_chunks
     # Segmentation
 
-    window_size = 50  # 1 second
     chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(chunks_ocd,
                                                                                                                            chunks_null_class,
                                                                                                                            window_size)
+
+    assert len(labels_null_segmented) != 0
+    labels_ocd_multiclass = labels.reset_index(drop=True)
+    _, labels_ocd_segmented_multiclass = segment_windows(chunks_ocd, labels_ocd_multiclass.to_numpy(), window_size)
     del chunks_ocd
     del chunks_null_class
 
-    # for the feature extraction we need all of our data in one concatenated df - tsfresh groups by segment id
-    null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
+    assert len(set(labels_ocd_multiclass)) == len(set(labels_ocd_segmented_multiclass))
+
+    # reuse chunks_ocd_segmented from the segmentation for the binary classifier
+    assert len(labels_ocd_segmented_multiclass) == len(chunks_ocd_segmented)
+
+    mulit_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
         [chunks_ocd_segmented, chunks_null_segmented],
-        [labels_ocd_segmented, labels_null_segmented])
-    assert len(set(labels_null_classification)) == 2
+        [labels_ocd_segmented_multiclass, labels_null_segmented])
+    assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
 
-    print("Finished data preparation and segmentation")
-    # Feature extraction
+    labels_multi_class_classification = labels_multi_class_classification.str.replace("  ", " ").str.strip()
 
-    X_null_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor)
+    assert set(labels_multi_class_classification) == {'checking oven',
+                                                      'cleaning cup',
+                                                      'cleaning floor',
+                                                      'cleaning leg',
+                                                      'cleaning table',
+                                                      'cleaning window',
+                                                      'drying hands',
+                                                      'null class',
+                                                      'pulling door',
+                                                      'pulling hair',
+                                                      'pushing door',
+                                                      'sitting down',
+                                                      'standing up',
+                                                      'walking',
+                                                      'washing hands'}
 
-    print("Finished feature extraction")
-
-    # Feature selection
-    impute(X_null_classification)
-    X_null_classification_selected = select_features(X_null_classification, labels_null_classification)
-
-    print("Finished feature selection")
-
+    # Feature extraction for multi class OCD activities incl null
+    X_multi_class_classification = extract_timeseries_features(mulit_class_df, use_indoor=use_indoor,
+                                                               feature_set_config=feature_calculation_setting)
+    # Feature selection for multi class OCD activities incl null
+    impute(X_multi_class_classification)
+    X_multi_class_classification_selected = select_features(X_multi_class_classification,
+                                                            labels_multi_class_classification)
     scaler = StandardScaler()
-    X_null_classification_scaled = scaler.fit_transform(X_null_classification_selected)
+    X_multi_class_classification_scaled = scaler.fit_transform(X_multi_class_classification_selected)
 
-    # Classification
-    classify_all(X_null_classification_scaled, labels_null_classification)
-
-
-def test_run_short_recordings_clf():
-    run_binary_classification("../../data/phyphox/short recordings/")
+    print("Multi class classification: using indoor: {}; FC params: {}; window_size".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
+    classify_all(X_multi_class_classification_scaled, labels_multi_class_classification)
 
 
-run_supervised_classification("../../data/phyphox/short recordings/")
+def test_run_multiclass_recordings_clf():
+    experiment_dir_path = "../../data/phyphox/full recordings/"
+    use_indoor = True
+    window_size = 50
+    # MinimalFCParameters, ComprehensiveFCParameters, EfficientFCParameters
+    feature_calculation_setting = MinimalFCParameters()
+
+    # Ana-2, Ariane, Julian, Wiki
+    experiment_dirs_selected = ["Ana-2", "Ariane", "Julian", "Wiktoria"]
+
+    run_multiclass_classification(experiment_dir_path=experiment_dir_path,
+                                  experiment_dirs_selected=experiment_dirs_selected,
+                                  use_indoor=use_indoor,
+                                  feature_calculation_setting=feature_calculation_setting,
+                                  window_size=window_size)
+
