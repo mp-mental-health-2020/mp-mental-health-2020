@@ -14,10 +14,10 @@ from xgboost import XGBClassifier;
 
 models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()),
           ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)),
-          ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))]
+          ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))]
 
 
-
+# ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42))
 
 
 def classify_all(X, y, label_ids=None):
