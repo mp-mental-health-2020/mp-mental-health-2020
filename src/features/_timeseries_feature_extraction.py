@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
 from tsfresh import extract_features
-from tsfresh.feature_extraction import MinimalFCParameters
+from tsfresh.feature_extraction import ComprehensiveFCParameters
 
 
-def extract_timeseries_features(timeseries, use_indoor, use_fingerprinting_approach):
+def extract_timeseries_features(timeseries, use_indoor, use_fingerprinting_approach, feature_set_config=None):
+    if not feature_set_config:
+        feature_set_config = ComprehensiveFCParameters()
     if use_indoor:
         if use_fingerprinting_approach:
             indoor_df = timeseries.loc[:, [2, 3, 4, 5, 6, 7, 8, 10, "action_id", "segment_id"]]
@@ -16,7 +18,7 @@ def extract_timeseries_features(timeseries, use_indoor, use_fingerprinting_appro
             indoor_features = extract_indoor_feature(timeseries, column_id=['action_id', "segment_id"])
             timeseries.drop(["rssi", "minor"], axis=1, inplace=True)
     timeseries.drop(["action_id", "segment_id"], axis=1, inplace=True)
-    features = extract_features(timeseries, column_id='combined_id', default_fc_parameters=MinimalFCParameters())
+    features = extract_features(timeseries, column_id='combined_id', default_fc_parameters=feature_set_config)
     if use_indoor:
         # One is tuple, one is multi index
         # features.reset_index(drop=True, inplace=True)

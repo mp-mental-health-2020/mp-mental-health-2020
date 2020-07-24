@@ -11,28 +11,36 @@ from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 #from xgboost import XGBClassifier;
+from output.output import output_figure
 
-models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()),
-          ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)),
-          ('NB', GaussianNB()), ('SVC', SVC())]
+models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr'))]#, ('LDA', LinearDiscriminantAnalysis()),
+          #('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)),
+          #('NB', GaussianNB()), ('SVC', SVC())]
 
-# ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42)),
+#('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42)),
 
 
-def classify_all(X, y, label_ids=None):
+
+def classify_all(X, y, path):
     for name, model in models:
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
 
-        if label_ids:
-            # confusion matrix
-            y_pred = cross_val_predict(model, X, y, cv=8)
-            conf_mat = confusion_matrix(y, y_pred)
-            # print(conf_mat)
-            df_cm = pd.DataFrame(conf_mat, index=label_ids.keys(),
-                                 columns=label_ids.keys())
-            df_cm["sum"] = df_cm.sum(axis=1)
-            df_cm = df_cm.loc[:, label_ids.keys()].div(df_cm["sum"], axis=0)
-            plt.figure(figsize=(10, 7))
-            sn.heatmap(df_cm, annot=True)
-            plt.show()
+        #if label_ids:
+        # confusion matrix
+
+        y_pred = cross_val_predict(model, X, y, cv=8)
+
+        labels_set = set(y)
+        conf_mat = confusion_matrix(y, y_pred)
+        # print(conf_mat)
+        df_cm = pd.DataFrame(conf_mat, index=labels_set,
+                             columns=labels_set)
+        df_cm["sum"] = df_cm.sum(axis=1)
+        df_cm = df_cm.loc[:, labels_set].div(df_cm["sum"], axis=0)
+        fig = plt.figure(figsize=(10, 7))
+        sn.heatmap(df_cm, annot=True, fmt='g')
+        plt.show()
+        output_figure(fig=fig, path=path, name=("confusion_matrix_"+name), format="png")
+
+
