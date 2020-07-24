@@ -1,4 +1,4 @@
-def output_latex(df, fig, name, format):
+def output_figure(format, df=None, fig=None, name=None):
     if format == "latex":
         print(df.to_latex(index=False))
     if format == "pdf":
