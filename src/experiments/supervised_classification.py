@@ -11,8 +11,8 @@ from file_handling import get_sub_directories
 from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
     preprocess_chunks_for_null_test_with_indoor, \
     segment_null_classification, segment_windows
-from visualization._visualization import swarm_plot_top_features, plot_duration_histogram
-
+from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d
+from output.output import output_figure
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
     print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
@@ -27,11 +27,11 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     print("Finished reading data")
 
     # we only need the y vector for the multi class clf
-    y.reset_index(inplace=True)
+    #y.reset_index(inplace=True) TODO
     labels = y.loc[:, "label"].squeeze()
 
-    plot_duration_histogram(chunks["right"])
-    plot_duration_histogram(null_chunks["right"])
+    output_figure(fig=plot_duration_histogram(chunks["right"]), name="duration_histogram_activities", format="png")
+    output_figure(fig=plot_duration_histogram(null_chunks["right"]), name="duration_histogram_null", format="png")
 
     # Preprocess data
     if use_indoor:
@@ -78,13 +78,13 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     # reuse chunks_ocd_segmented from the segmentation for the binary classifier
     assert len(labels_ocd_segmented_multiclass) == len(chunks_ocd_segmented)
 
-    mulit_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
+    multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
         [chunks_ocd_segmented, chunks_null_segmented],
         [labels_ocd_segmented_multiclass, labels_null_segmented])
     assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
 
     # Feature extraction for multi class OCD activities incl null
-    X_multi_class_classification = extract_timeseries_features(mulit_class_df, use_indoor=use_indoor,
+    X_multi_class_classification = extract_timeseries_features(multi_class_df, use_indoor=use_indoor,
                                                                feature_set_config=feature_calculation_setting)
     # Feature selection for multi class OCD activities incl null
     impute(X_multi_class_classification)
@@ -92,6 +92,26 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
                                                             labels_multi_class_classification)
     scaler = StandardScaler()
     X_multi_class_classification_scaled = scaler.fit_transform(X_multi_class_classification_selected)
+
+    output_figure(fig=pca_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+           labels_multi_class_classification.unique(),
+           ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+            'C17', 'C18']), name="pca_2d_with_null", format="png")
+
+    output_figure(fig=pca_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+           labels_multi_class_classification.unique()[0:14],
+           ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+            'C17', 'C18']), name="pca_2d_without_null", format="png")
+
+    output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+           labels_multi_class_classification.unique(),
+           ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+            'C17', 'C18'], n_iter=1000, perplexity=30), name="sne_2d_with_null", format="png")
+
+    output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+           labels_multi_class_classification.unique()[0:14],
+           ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+            'C17', 'C18'], n_iter=1000, perplexity=30), name="sne_2d_without_null", format="png")
 
     #print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
     classify_all(X_multi_class_classification_scaled, labels_multi_class_classification)
