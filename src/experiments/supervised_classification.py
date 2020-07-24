@@ -6,8 +6,8 @@ from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
-from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, preprocess_chunks_for_null_test_with_indoor, \
-    segment_null_classification
+from preprocessing import (concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, preprocess_chunks_for_null_test_with_indoor,
+                           segment_null_classification)
 
 
 def run_supervised_classification(experiment_dir_path):
@@ -15,8 +15,10 @@ def run_supervised_classification(experiment_dir_path):
 
     # Read data
     use_indoor = True
+    use_fingerprinting_approach = True
     sample_rate = 50
-    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=False, require_indoor=use_indoor)
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=False, require_indoor=use_indoor,
+                                                     use_fingerprinting_approach=use_fingerprinting_approach)
 
     del experiment_dir_path
     del experiment_dirs
@@ -54,7 +56,8 @@ def run_supervised_classification(experiment_dir_path):
     print("Finished data preparation and segmentation")
     # Feature extraction
 
-    X_null_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor)
+    X_null_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor,
+                                                        use_fingerprinting_approach=use_fingerprinting_approach)
 
     print("Finished feature extraction")
 
@@ -71,5 +74,5 @@ def run_supervised_classification(experiment_dir_path):
     classify_all(X_null_classification_scaled, labels_null_classification)
 
 
-def test_run_short_recordings_clf():
+def test_run_short_recordings():
     run_supervised_classification("../../data/phyphox/full recordings/")

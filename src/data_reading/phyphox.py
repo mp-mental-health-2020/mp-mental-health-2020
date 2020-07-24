@@ -4,7 +4,7 @@ from random import sample
 import pandas as pd
 
 import file_handling
-from indoor_positioning import get_beacons_for_proximity_approach, get_file_as_data_frame
+from indoor_positioning import get_beacons_for_fingerprinting_approach, get_beacons_for_proximity_approach, get_file_as_data_frame
 from preprocessing import align_data
 from src import preprocessing
 from src.file_handling import get_file_names_in_directory_for_pattern, get_project_directory
@@ -110,7 +110,7 @@ def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=Tr
     return data_frames
 
 
-def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True):
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True, use_fingerprinting_approach=True):
     """
 
     Parameters
@@ -162,7 +162,7 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
                        key, data_frame in data_frames.items()}
 
         if require_indoor:
-            indoor_data = get_indoor_data(directory, sample_rate, offsets=offsets)
+            indoor_data = get_indoor_data(directory, sample_rate, use_fingerprinting_approach=use_fingerprinting_approach, offsets=offsets)
             if indoor_data is None:
                 continue
             data_frames["indoor"] = indoor_data
@@ -189,11 +189,14 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
                 # null chunks are everything in between annotations
                 null_chunks[key] += [df.iloc[int(annotation["end"] * sample_rate):int(y_current.iloc[i + 1:i + 2]["start"] * sample_rate)] for
                                      i, annotation in y_current.iterrows() if i < len(y_current) - 1]
+
+        break
     return chunks, null_chunks, y
 
 
-def get_indoor_data(directory, sample_rate, offsets=None):
+def get_indoor_data(directory, sample_rate, use_fingerprinting_approach=True, offsets=None):
     """
+    TODO 24.07.2020: outdated documentation
     Gets the aggregated indoor positioning data from the given directory with synchronization performed, if given. Data will be aggregated to only
     return the strongest beacon data in each chunk. This data will be interpolated to be at the given sample rate. Will return 'None' if no indoor
     data could be found within the directory.
@@ -204,6 +207,8 @@ def get_indoor_data(directory, sample_rate, offsets=None):
         Path to the directory containing the data.
     sample_rate : int
         Requested frequency of data after interpolation in Hz.
+    use_fingerprinting_approach : bool, default=True
+        Use the fingerprinting instead of the most powerful signal approach.
     offsets : dict, default=None
         If supplied and it contains the 'indoor' key, the value will be used to remove the first few seconds of data for synchronization purposes.
         Value is given in seconds.
@@ -224,16 +229,15 @@ def get_indoor_data(directory, sample_rate, offsets=None):
             synchronized_start_timestamp = start_timestamp + offset * 1000
             indoor_data_frame = indoor_data_frame[indoor_data_frame["timestamp"] >= synchronized_start_timestamp]
 
-            # filter out synchronization beacon
-            indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 9]
+            if not use_fingerprinting_approach:
+                # filter out synchronization beacon
+                indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 9]
 
-        # filter out incorrect placed beacons
-        # TODO: remove this once the recordings are replaced
-        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 2]
-        indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 10]
+        if use_fingerprinting_approach:
+            indoor_data_frame = get_beacons_for_fingerprinting_approach(indoor_data_frame)
+        else:
+            indoor_data_frame = get_beacons_for_proximity_approach(indoor_data_frame)
 
-        new_df = get_beacons_for_proximity_approach(indoor_data_frame)
-        indoor_data_frame = new_df
         indoor_data_frame = set_time_delta_as_index(indoor_data_frame, origin_timestamp_unit='ms',
                                                     output_timestamp_unit="milliseconds",
                                                     timestamp_key="timestamp")
