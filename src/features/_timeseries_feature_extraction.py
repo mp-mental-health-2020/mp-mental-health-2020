@@ -6,7 +6,7 @@ from tsfresh import extract_features
 def extract_timeseries_features(timeseries, use_indoor, feature_set_config=tsfresh.feature_extraction.settings.ComprehensiveFCParameters()):
     if use_indoor:
         indoor_features = extract_indoor_feature(timeseries, column_id='action_id')
-    #timeseries = timeseries.drop(["rssi", "minor"], axis=1)
+    timeseries = timeseries.drop(["rssi", "minor"], axis=1)
     assert "rssi" not in timeseries.columns
     assert "minor" not in timeseries.columns
     features = extract_features(timeseries, column_id='action_id', default_fc_parameters=feature_set_config)
