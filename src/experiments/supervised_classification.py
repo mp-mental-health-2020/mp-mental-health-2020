@@ -11,7 +11,7 @@ from file_handling import get_sub_directories
 from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
     preprocess_chunks_for_null_test_with_indoor, \
     segment_null_classification, segment_windows
-from visualization._visualization import swarm_plot_top_features
+from visualization._visualization import swarm_plot_top_features, plot_duration_histogram
 
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
@@ -29,6 +29,9 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     # we only need the y vector for the multi class clf
     y.reset_index(inplace=True)
     labels = y.loc[:, "label"].squeeze()
+
+    plot_duration_histogram(chunks["right"])
+    plot_duration_histogram(null_chunks["right"])
 
     # Preprocess data
     if use_indoor:
