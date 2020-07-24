@@ -4,6 +4,7 @@ from tsfresh.feature_extraction import MinimalFCParameters, EfficientFCParameter
 from tsfresh.utilities.dataframe_functions import impute
 import pandas as pd
 import os
+import sys
 
 from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
@@ -16,12 +17,15 @@ from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d
 from output.output import output_figure
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
-    print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
     path = os.getcwd()
     sub_folder = "indoor{}_features{}_windowSize{}/".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size)
     path = path + "/output_experiments/multi/" + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
+    sys.stdout = open(path + "console.txt", 'w')
+
+    print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
+
     experiment_dirs = get_sub_directories(experiment_dir_path)
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
@@ -120,7 +124,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
             'C17', 'C18'], n_iter=1000, perplexity=30), path=path,name="sne_2d_without_null", format="png")
 
     #print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
-    classify_all(X_multi_class_classification_scaled, labels_multi_class_classification)
+    classify_all(X_multi_class_classification_scaled, labels_multi_class_classification, path)
 
     # TODO: store in file
 

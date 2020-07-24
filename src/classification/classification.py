@@ -11,16 +11,17 @@ from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 #from xgboost import XGBClassifier;
+from output.output import output_figure
 
-models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()),
-          ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)),
-          ('NB', GaussianNB()), ('SVC', SVC())]
+models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr'))]#, ('LDA', LinearDiscriminantAnalysis()),
+          #('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)),
+          #('NB', GaussianNB()), ('SVC', SVC())]
 
 #('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42)),
 
 
 
-def classify_all(X, y):
+def classify_all(X, y, path):
     for name, model in models:
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
@@ -37,8 +38,9 @@ def classify_all(X, y):
                              columns=labels_set)
         df_cm["sum"] = df_cm.sum(axis=1)
         df_cm = df_cm.loc[:, labels_set].div(df_cm["sum"], axis=0)
-        plt.figure(figsize=(10, 7))
+        fig = plt.figure(figsize=(10, 7))
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
+        output_figure(fig=fig, path=path, name=("confusion_matrix_"+name), format="png")
 
 
