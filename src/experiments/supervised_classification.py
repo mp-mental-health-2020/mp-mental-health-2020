@@ -37,7 +37,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     print("Finished reading data")
 
     # we only need the y vector for the multi class clf
-    #y.reset_index(inplace=True) TODO
+    #y.reset_index(inplace=True)
     labels = y.loc[:, "label"].squeeze()
 
     output_figure(fig=plot_duration_histogram(chunks["right"]), path=path, name="duration_histogram_activities", format="png")
