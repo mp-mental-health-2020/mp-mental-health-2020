@@ -16,7 +16,8 @@ from preprocessing import (concat_chunks_for_feature_extraction, preprocess_chun
 from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 
-def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
+def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
+                                  feature_calculation_setting):
     path = os.getcwd()
     sub_folder = "indoor{}_features{}_windowSize{}/".format(use_indoor, feature_calculation_setting.__class__.__name__, window_size)
     path = path + "/output_experiments/multi/" + sub_folder
@@ -31,8 +32,6 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     experiment_dirs = get_sub_directories(experiment_dir_path)
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
-    use_indoor = True
-    use_fingerprinting_approach = True
     sample_rate = 50
     chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor,
                                                      use_fingerprinting_approach=use_fingerprinting_approach)
@@ -146,6 +145,7 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
     experiment_dir_paths = config["experiment_dir_paths"]
     experiment_dirs_selected = config["experiment_dirs_selected"]
     use_indoor = config["use_indoor"]
+    use_fingerprinting_approach = config["use_fingerprinting_approach"]
     feature_calculation_settings = config["feature_calculation_settings"]
     window_sizes = config["window_sizes"]
     exclude = config["exclude"]
@@ -155,32 +155,35 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
         for path in experiment_dir_paths:
             for experiment_dir in experiment_dirs_selected:
                 for indoor in use_indoor:
-                    for setting in feature_calculation_settings:
-                        for size in window_sizes:
-                            for i in range(len(exclude)):
-                                if not excluded_configuration and \
-                                        type in exclude[i]["classification_types"] and \
-                                        path in exclude[i]["experiment_dir_paths"] and \
-                                        experiment_dir in exclude[i]["experiment_dirs_selected"] and \
-                                        indoor in exclude[i]["use_indoor"] and \
-                                        setting in exclude[i]["feature_calculation_settings"] and \
-                                        size in exclude[i]["window_sizes"]:
-                                    excluded_configuration = True
-                            if not excluded_configuration:
-                                if setting == "minimal":
-                                    setting = MinimalFCParameters()
-                                if setting == "efficient":
-                                    setting = EfficientFCParameters()
-                                if setting == "comprehensive":
-                                    setting = ComprehensiveFCParameters()
-                                if type == "multi":
-                                    run_multiclass_classification(experiment_dir_path=path,
-                                                                  experiment_dirs_selected=experiment_dir,
-                                                                  use_indoor=indoor,
-                                                                  feature_calculation_setting=setting,
-                                                                  window_size=size)
-                            # TODO implement binary classification
-                            excluded_configuration = False
+                    for fingerprinting in use_fingerprinting_approach:
+                        for setting in feature_calculation_settings:
+                            for size in window_sizes:
+                                for i in range(len(exclude)):
+                                    if not excluded_configuration and \
+                                            type in exclude[i]["classification_types"] and \
+                                            path in exclude[i]["experiment_dir_paths"] and \
+                                            experiment_dir in exclude[i]["experiment_dirs_selected"] and \
+                                            indoor in exclude[i]["use_indoor"] and \
+                                            fingerprinting in exclude[i]["use_fingerprinting_approach"] and \
+                                            setting in exclude[i]["feature_calculation_settings"] and \
+                                            size in exclude[i]["window_sizes"]:
+                                        excluded_configuration = True
+                                if not excluded_configuration:
+                                    if setting == "minimal":
+                                        setting = MinimalFCParameters()
+                                    if setting == "efficient":
+                                        setting = EfficientFCParameters()
+                                    if setting == "comprehensive":
+                                        setting = ComprehensiveFCParameters()
+                                    if type == "multi":
+                                        run_multiclass_classification(experiment_dir_path=path,
+                                                                      experiment_dirs_selected=experiment_dir,
+                                                                      use_indoor=indoor,
+                                                                      use_fingerprinting_approach=fingerprinting,
+                                                                      feature_calculation_setting=setting,
+                                                                      window_size=size)
+                                # TODO implement binary classification
+                                excluded_configuration = False
 
 
 def test_run_multiclass_recordings_clf():
