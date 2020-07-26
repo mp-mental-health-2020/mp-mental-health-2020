@@ -22,7 +22,10 @@ def segment_windows(chunks, classes, window_size):
             # TODO: test if samples shorter than window_size are removed
             c_new = c[i * window_size:(i + 1) * window_size]
             action_id = c["action_id"][0]
-            c_new["action_id"] = [(action_id, i)] * len(c_new)
+            # c_new["action_id"] = [(action_id, i)] * len(c_new)
+            c_new["combined_id"] = [(action_id, i)] * len(c_new)
+            c_new["action_id"] = [action_id] * len(c_new)
+            c_new["segment_id"] = [i] * len(c_new)
             labels.append(l)
             indices.append((action_id, i))
             new_chunks.append(c_new)
