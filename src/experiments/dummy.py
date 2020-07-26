@@ -4,7 +4,7 @@ import file_handling
 from data_reading.phyphox import read_experiment
 from file_handling import get_sub_directories
 from indoor_positioning import get_beacons_for_proximity_approach, get_file_as_data_frame
-from preprocessing import align_data, merge_left_and_right_chunk, segment_windows, set_time_delta_as_index
+from preprocessing import align_data, merge_chunks, segment_windows, set_time_delta_as_index
 
 
 def test_supervised_classification():
@@ -45,7 +45,7 @@ def test_supervised_classification():
             one_handed_chunk = current_data_chunk
             one_handed_chunk["action_id"] = action_id
 
-        two_handed_chunk = merge_left_and_right_chunk(two_handed_chunk[0], two_handed_chunk[1], action_id)
+        two_handed_chunk = merge_chunks(two_handed_chunk[0], two_handed_chunk[1], action_id)
         chunks_two_handed.append(two_handed_chunk)
         del two_handed_chunk
         del action_id
@@ -60,7 +60,7 @@ def test_supervised_classification():
     null_action_ids = range(len(chunks_two_handed), len(chunks_two_handed) + len(null_data_frames["right"]))
     for c_r, c_l, action_id in zip(null_data_frames["right"], null_data_frames["left"], null_action_ids):
         if len(c_l):
-            c_both = merge_left_and_right_chunk(c_l, c_r, action_id)
+            c_both = merge_chunks(c_l, c_r, action_id)
             null_class_chunks.append(c_both)
 
     # new label id for ocd activities
