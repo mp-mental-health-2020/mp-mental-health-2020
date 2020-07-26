@@ -190,7 +190,13 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
                 null_chunks[key] += [df.iloc[int(annotation["end"] * sample_rate):int(y_current.iloc[i + 1:i + 2]["start"] * sample_rate)] for
                                      i, annotation in y_current.iterrows() if i < len(y_current) - 1]
 
-        break
+    # clear all the labels with multiple consecutive white spaces
+    y["label"] = y["label"].str.replace("  ", " ").str.strip()
+    y.reset_index(inplace=True, drop=True)
+    # we have to do this twice to access the index column using .loc
+    y.reset_index(inplace=True)
+    # make sure that in the labels vector we have no duplicate indexes
+    assert len(y.loc[:, "index"].unique()) == len(y)
     return chunks, null_chunks, y
 
 

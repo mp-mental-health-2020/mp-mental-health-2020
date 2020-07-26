@@ -1,20 +1,20 @@
 import os
 import sys
-import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
-from tsfresh.feature_extraction import MinimalFCParameters, EfficientFCParameters, ComprehensiveFCParameters
+from tsfresh.feature_extraction import ComprehensiveFCParameters, EfficientFCParameters, MinimalFCParameters
 from tsfresh.utilities.dataframe_functions import impute
 
 from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
-from preprocessing import (concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, preprocess_chunks_for_null_test_with_indoor,
-                           segment_null_classification, segment_windows)
-from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d
 from output.output import output_figure
+from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
+    preprocess_chunks_for_null_test_with_indoor, \
+    segment_windows
+from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
@@ -43,7 +43,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     print("Finished reading data")
 
     # we only need the y vector for the multi class clf
-    # y.reset_index(inplace=True)
+    y.reset_index(inplace=True)
     labels = y.loc[:, "label"].squeeze()
 
     output_figure(fig=plot_duration_histogram(chunks["right"]), path=path, name="duration_histogram_activities", format="png")
@@ -59,9 +59,9 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     del null_chunks
     # Segmentation
 
-    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(chunks_ocd,
-                                                                                                                           chunks_null_class,
-                                                                                                                           window_size)
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(chunks_ocd,
+                                                                                                                               chunks_null_class,
+                                                                                                                               window_size)
 
     assert len(labels_null_segmented) != 0
 
