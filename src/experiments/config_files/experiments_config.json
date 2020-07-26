@@ -1,9 +1,10 @@
 {
-	"classification_types": ["binary", "multi"],
+	"classification_types": ["binary"],
 	"experiment_dir_paths": ["./data/phyphox/full recordings/"],
 	"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
 	"activities": [],
 	"use_indoor": [false, true],
+	"use_fingerprinting_approach": [false, true],
 	"feature_calculation_settings": ["minimal"],
 	"window_sizes": [100],
 	"null_class_included": [true, false],
