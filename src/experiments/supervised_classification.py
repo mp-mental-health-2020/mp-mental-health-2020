@@ -14,10 +14,11 @@ from file_handling import get_sub_directories
 from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
     preprocess_chunks_for_null_test_with_indoor, \
     segment_null_classification, segment_windows
-from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d
+from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d, swarm_plot_top_features
 from output.output import output_figure
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting, null_class_included, right_hand_only):
+    right_hand_only = False #TODO rework
     path = os.getcwd()
     sub_folder = "indoor{}_features{}_windowSize{}_nullClassIncluded{}/".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size, null_class_included)
     path = path + "/output_experiments/multi/" + sub_folder
@@ -32,7 +33,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     # Read data
     sample_rate = 50
     chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor)
-    print(chunks)
+
     #TODO test right hand only and change activities to only include both and right handed activities
     if right_hand_only:
         chunks = chunks["right"]
@@ -137,8 +138,93 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     classify_all(X_multi_class_classification_scaled, labels_multi_class_classification, path)
 
 def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
-    # TODO implement binary classification
-    return
+    right_hand_only = False  # TODO rework
+    path = os.getcwd()
+    sub_folder = "indoor{}_features{}_windowSize{}/".format(use_indoor,
+                                                                                feature_calculation_setting.__class__.__name__,
+                                                                                window_size)
+    path = path + "/output_experiments/binary/" + sub_folder
+    if not os.path.exists(path):
+        os.makedirs(path)
+    sys.stdout = open(path + "console.txt", 'w')
+
+    print("Binary classification: using indoor: {}; FC params: {}; window_size: {}".format(
+            use_indoor, feature_calculation_setting.__class__.__name__, window_size))
+
+    experiment_dirs = get_sub_directories(experiment_dir_path)
+    experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
+    # Read data
+    sample_rate = 50
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True,
+                                                     require_indoor=use_indoor)
+
+    # TODO test right hand only and change activities to only include both and right handed activities
+    if right_hand_only:
+        chunks = chunks["right"]
+        null_chunks = null_chunks["right"]
+    del experiment_dir_path
+    del experiment_dirs
+    print("Finished reading data")
+
+    # we only need the y vector for the multi class clf
+    # y.reset_index(inplace=True)
+    labels = y.loc[:, "label"].squeeze()
+
+    output_figure(fig=plot_duration_histogram(chunks["right"]), path=path, name="duration_histogram_activities",
+                  format="png")
+    output_figure(fig=plot_duration_histogram(null_chunks["right"]), path=path, name="duration_histogram_null",
+                  format="png")
+
+    # Preprocess data
+    if use_indoor:
+        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks)
+    else:
+        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks)
+
+    del chunks
+    del null_chunks
+    # Segmentation
+
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(
+        chunks_ocd,
+        chunks_null_class,
+        window_size)
+
+    assert len(labels_null_segmented) != 0
+
+    null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
+        [chunks_ocd_segmented, chunks_null_segmented],
+        [labels_ocd_segmented, labels_null_segmented])
+    assert len(set(labels_null_classification)) == 2
+
+    X_null_class_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor,
+                                                              feature_set_config=feature_calculation_setting)
+
+    impute(X_null_class_classification)
+    X_null_classification_selected = select_features(X_null_class_classification, labels_null_classification)
+
+    scaler = StandardScaler()
+    X_null_classification = scaler.fit_transform(X_null_classification_selected)
+
+    classify_all(X_null_classification, labels_null_classification, path)
+
+    labels_null_classification.reset_index(drop=True)
+
+    # add the old labels to the column names of the features again
+    X_null_classification_selected = pd.DataFrame(X_null_classification, columns=X_null_classification_selected.columns)
+
+    # reduce the amount of selected features and append the labels as an extra column
+    X_y = pd.concat([X_null_classification_selected.iloc[:, :5], labels_null_classification.reset_index(drop=True)],
+                    axis=1)
+
+    label_vals = {11: "null class", 12: "OCD activity"}
+    # rename the last column
+    cols = [c for c in X_y.columns]
+    cols[-1] = "class"
+    X_y.columns = cols
+    X_y.replace({"class": label_vals}, inplace=True)
+
+    output_figure(fig=swarm_plot_top_features(pd.DataFrame(X_y).reset_index()), path=path, name="swarm_plot_top_features", format="png")
 
 def run_experiments(config_file = './config_files/experiments_config.json'):
     import json
@@ -193,6 +279,7 @@ def run_experiments(config_file = './config_files/experiments_config.json'):
                                                                       use_indoor=indoor,
                                                                       feature_calculation_setting=setting,
                                                                       window_size=size)
+                                            matplotlib.pyplot.close("all")
                                     excluded_configuration = False
 
 def test_run_multiclass_recordings_clf():
