@@ -1,3 +1,4 @@
+import matplotlib
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
 from tsfresh.feature_extraction import MinimalFCParameters, EfficientFCParameters, ComprehensiveFCParameters
@@ -16,22 +17,26 @@ from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunk
 from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d
 from output.output import output_figure
 
-def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
+def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting, null_class_included, right_hand_only):
     path = os.getcwd()
-    sub_folder = "indoor{}_features{}_windowSize{}/".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size)
+    sub_folder = "indoor{}_features{}_windowSize{}_nullClassIncluded{}/".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size, null_class_included)
     path = path + "/output_experiments/multi/" + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
     sys.stdout = open(path + "console.txt", 'w')
 
-    print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
+    print("Multi class classification: using indoor: {}; FC params: {}; window_size: {}; null_class_included: {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size, null_class_included))
 
     experiment_dirs = get_sub_directories(experiment_dir_path)
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
     sample_rate = 50
     chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor)
-
+    print(chunks)
+    #TODO test right hand only and change activities to only include both and right handed activities
+    if right_hand_only:
+        chunks = chunks["right"]
+        null_chunks = null_chunks["right"]
     del experiment_dir_path
     del experiment_dirs
     print("Finished reading data")
@@ -88,10 +93,16 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     # reuse chunks_ocd_segmented from the segmentation for the binary classifier
     assert len(labels_ocd_segmented_multiclass) == len(chunks_ocd_segmented)
 
-    multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
-        [chunks_ocd_segmented, chunks_null_segmented],
-        [labels_ocd_segmented_multiclass, labels_null_segmented])
-    assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
+    if null_class_included:
+        multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
+            [chunks_ocd_segmented, chunks_null_segmented],
+            [labels_ocd_segmented_multiclass, labels_null_segmented])
+        assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
+    else:
+        multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
+            [chunks_ocd_segmented],
+            [labels_ocd_segmented_multiclass])
+        assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass))
 
     # Feature extraction for multi class OCD activities incl null
     X_multi_class_classification = extract_timeseries_features(multi_class_df, use_indoor=use_indoor,
@@ -123,10 +134,11 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
            ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
             'C17', 'C18'], n_iter=1000, perplexity=30), path=path,name="sne_2d_without_null", format="png")
 
-    #print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
     classify_all(X_multi_class_classification_scaled, labels_multi_class_classification, path)
 
-    # TODO: store in file
+def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
+    # TODO implement binary classification
+    return
 
 def run_experiments(config_file = './config_files/experiments_config.json'):
     import json
@@ -138,6 +150,8 @@ def run_experiments(config_file = './config_files/experiments_config.json'):
     use_indoor = config["use_indoor"]
     feature_calculation_settings = config["feature_calculation_settings"]
     window_sizes = config["window_sizes"]
+    null_class_included = config["null_class_included"]
+    right_hand_only = config["right_hand_only"]
     exclude = config["exclude"]
     excluded_configuration = False
 
@@ -147,27 +161,39 @@ def run_experiments(config_file = './config_files/experiments_config.json'):
                 for indoor in use_indoor:
                     for setting in feature_calculation_settings:
                         for size in window_sizes:
-                            for i in range(len(exclude)):
-                                if  not excluded_configuration and \
-                                    type in exclude[i]["classification_types"] and \
-                                    path in exclude[i]["experiment_dir_paths"] and \
-                                    experiment_dir in exclude[i]["experiment_dirs_selected"] and \
-                                    indoor in exclude[i]["use_indoor"] and \
-                                    setting in exclude[i]["feature_calculation_settings"] and \
-                                    size in exclude[i]["window_sizes"]:
-                                        excluded_configuration = True
-                            if not excluded_configuration:
-                                if setting == "minimal": setting = MinimalFCParameters()
-                                if setting == "efficient": setting = EfficientFCParameters()
-                                if setting == "comprehensive": setting = ComprehensiveFCParameters()
-                                if type == "multi":
-                                    run_multiclass_classification(experiment_dir_path=path,
-                                                              experiment_dirs_selected=experiment_dir,
-                                                              use_indoor=indoor,
-                                                              feature_calculation_setting=setting,
-                                                              window_size=size)
-                            #TODO implement binary classification
-                            excluded_configuration = False
+                            for included in null_class_included:
+                                for right_hand in right_hand_only:
+                                    for i in range(len(exclude)):
+                                        if  not excluded_configuration and \
+                                            type in exclude[i]["classification_types"] and \
+                                            path in exclude[i]["experiment_dir_paths"] and \
+                                            experiment_dir in exclude[i]["experiment_dirs_selected"] and \
+                                            indoor in exclude[i]["use_indoor"] and \
+                                            setting in exclude[i]["feature_calculation_settings"] and \
+                                            size in exclude[i]["window_sizes"] and \
+                                            included in exclude[i]["null_class_included"] and \
+                                            right_hand in exclude[i]["right_hand_only"]:
+                                                excluded_configuration = True
+                                    if not excluded_configuration:
+                                        if setting == "minimal": setting = MinimalFCParameters()
+                                        if setting == "efficient": setting = EfficientFCParameters()
+                                        if setting == "comprehensive": setting = ComprehensiveFCParameters()
+                                        if type == "multi":
+                                            run_multiclass_classification(experiment_dir_path=path,
+                                                                      experiment_dirs_selected=experiment_dir,
+                                                                      use_indoor=indoor,
+                                                                      feature_calculation_setting=setting,
+                                                                      window_size=size,
+                                                                      null_class_included=included,
+                                                                      right_hand_only = right_hand)
+                                            matplotlib.pyplot.close("all")
+                                        if type == "binary":
+                                            run_binary_classification(experiment_dir_path=path,
+                                                                      experiment_dirs_selected=experiment_dir,
+                                                                      use_indoor=indoor,
+                                                                      feature_calculation_setting=setting,
+                                                                      window_size=size)
+                                    excluded_configuration = False
 
 def test_run_multiclass_recordings_clf():
-    run_experiments(config_file = './config_files/experiments_config.json')
+    run_experiments(config_file = '/tmp/pycharm_project_688/src/experiments/config_files/experiments_config.json')

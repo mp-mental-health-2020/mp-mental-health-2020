@@ -1,27 +1,12 @@
 {
 	"classification_types": ["multi"],
-	"experiment_dir_paths": ["../../data/phyphox/full recordings/"],
+	"experiment_dir_paths": ["./data/phyphox/full recordings/"],
 	"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
 	"use_indoor": [false, true],
-	"feature_calculation_settings": ["minimal", "efficient"],
-	"window_sizes": [50, 100],
+	"feature_calculation_settings": ["minimal"],
+	"window_sizes": [100],
+	"null_class_included": [true, false],
+	"right_hand_only": [true, false],
 	"exclude":
-		[
-			{
-				"classification_types": ["multi"],
-				"experiment_dir_paths": ["../../data/phyphox/full recordings/"],
-				"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
-				"use_indoor": [true],
-				"feature_calculation_settings": ["efficient","minimal"],
-				"window_sizes": [50,100]
-			},
-			{
-				"classification_types": ["multi"],
-				"experiment_dir_paths": ["../../data/phyphox/full recordings/"],
-				"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
-				"use_indoor": [false],
-				"feature_calculation_settings": ["efficient"],
-				"window_sizes": [50,100]
-			}
-		]
+		[]
 }
