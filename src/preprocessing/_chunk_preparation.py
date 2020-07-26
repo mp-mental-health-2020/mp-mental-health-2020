@@ -21,7 +21,7 @@ def merge_chunks(chunk_left, chunk_right, action_id, chunk_indoor=None):
     c_l = chunk_left.reset_index()
     chunks_to_merge = [c_l]
 
-    if chunk_right:
+    if chunk_right is not None:
         c_r = chunk_right.reset_index(drop=True)
 
         if ACTION_ID_COL in list(c_r.columns):
