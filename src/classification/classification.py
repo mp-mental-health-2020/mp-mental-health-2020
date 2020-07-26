@@ -11,6 +11,7 @@ from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 #from xgboost import XGBClassifier;
+from evaluation._evaluation import auc_roc_cv
 from output.output import output_figure
 
 models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr'))]#, ('LDA', LinearDiscriminantAnalysis()),
@@ -21,7 +22,7 @@ models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_c
 
 
 
-def classify_all(X, y, path):
+def classify_all(X, y, path, binary):
     for name, model in models:
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
@@ -42,5 +43,7 @@ def classify_all(X, y, path):
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
         output_figure(fig=fig, path=path, name=("confusion_matrix_"+name), format="png")
+        if binary:
+            output_figure(fig=auc_roc_cv(X = X, y = y, model = model), path=path, name=("auc_roc_"+name), format="png")
 
 
