@@ -21,7 +21,7 @@ models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_c
 
 
 
-def classify_all(X, y, path):
+def classify_all(X, y, path=None):
     for name, model in models:
         scores = cross_val_score(model, X, y, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
@@ -41,6 +41,7 @@ def classify_all(X, y, path):
         fig = plt.figure(figsize=(10, 7))
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
-        output_figure(fig=fig, path=path, name=("confusion_matrix_"+name), format="png")
+        if path:
+            output_figure(fig=fig, path=path, name=("confusion_matrix_"+name), format="png")
 
 
