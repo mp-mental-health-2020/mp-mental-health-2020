@@ -22,7 +22,10 @@ def segment_windows(chunks, classes, window_size):
             # TODO: test if samples shorter than window_size are removed
             c_new = c[i * window_size:(i + 1) * window_size]
             action_id = c["action_id"][0]
-            c_new["action_id"] = [(action_id, i)] * len(c_new)
+            # c_new["action_id"] = [(action_id, i)] * len(c_new)
+            c_new["combined_id"] = [(action_id, i)] * len(c_new)
+            c_new["action_id"] = [action_id] * len(c_new)
+            c_new["segment_id"] = [i] * len(c_new)
             labels.append(l)
             indices.append((action_id, i))
             new_chunks.append(c_new)
@@ -30,7 +33,7 @@ def segment_windows(chunks, classes, window_size):
     return new_chunks, label_series
 
 
-def segment_null_classification(chunks_ocd, chunks_null_class, window_size):
+def segment_for_null_classification(chunks_ocd, chunks_null_class, window_size, labels_ocd_acts=None):
     """
 
     Parameters
@@ -38,14 +41,17 @@ def segment_null_classification(chunks_ocd, chunks_null_class, window_size):
     chunks_ocd
     chunks_null_class
     window_size
+    labels_ocd_acts: can be passed for multiclass classification
 
     Returns segmented chunks and labels for ocd and null class chunks
     -------
 
     """
     # new label for ocd activities
-    labels_ocd_acts = pd.Series(["OCD activity"] * len(chunks_ocd))
+    if labels_ocd_acts is None:
+        labels_ocd_acts = pd.Series(["OCD activity"] * len(chunks_ocd))
     assert len(chunks_ocd[0].columns) == len(chunks_null_class[0].columns)
+    assert len(labels_ocd_acts) == len(chunks_ocd)
     chunks_ocd_segmented, labels_ocd_segmented = segment_windows(chunks_ocd, labels_ocd_acts.to_numpy(), window_size)
 
     null_labels = pd.Series(["null class"] * len(chunks_null_class))
