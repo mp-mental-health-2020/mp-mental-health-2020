@@ -30,7 +30,7 @@ def classify_all(X, y):
 
         y_pred = cross_val_predict(model, X, y, cv=8)
 
-        labels_set = set(y)
+        labels_set = sorted(list(set(y)))
         conf_mat = confusion_matrix(y, y_pred)
         # print(conf_mat)
         df_cm = pd.DataFrame(conf_mat, index=labels_set,

@@ -19,12 +19,7 @@ def merge_chunks(chunk_left, chunk_right, action_id, chunk_indoor=None):
     # reset index first: this will set the indices to [0,1,2,3...] instead of timestamps which might not match between chunks
     # this ensures that we can join by index
     c_l = chunk_left.reset_index()
-
-    c_i = None
-
-    # TODO: make sure to sync correctly
-    if chunk_indoor is not None:
-        c_i = chunk_indoor.reset_index(drop=True)
+    chunks_to_merge = [c_l]
 
     if chunk_right:
         c_r = chunk_right.reset_index(drop=True)
@@ -33,11 +28,16 @@ def merge_chunks(chunk_left, chunk_right, action_id, chunk_indoor=None):
             c_r.drop(columns=[ACTION_ID_COL], inplace=True)
         # make sure that we have different column names for the data from right and left hand
         c_r.columns = [str(col) + '_right' for col in c_r.columns]
+        chunks_to_merge.append(c_r)
         # TODO: test that column count is correct
         # TODO: test that we only have one column with action_id
         # TODO: test that we have no NaNs
 
-    chunks_to_merge = [c_l, c_r and chunk_right is not None, c_i and c_i is not None]
+    # TODO: make sure to sync correctly
+    if chunk_indoor is not None:
+        c_i = chunk_indoor.reset_index(drop=True)
+        chunks_to_merge.append(c_i)
+
     # TODO: test that we always merge the right chunks
     c_all = pd.concat(chunks_to_merge, axis=1)
 
@@ -114,7 +114,7 @@ def preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks):
     return chunks_ocd, chunks_null_class
 
 
-def preprocess_chunks_for_multiclass_test(chunks, null_chunks, y):
+def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
     """
     Only use the active hand of an action for the chunks of the activities. The passive hand is added to the null chunks.
     Parameters
@@ -123,45 +123,56 @@ def preprocess_chunks_for_multiclass_test(chunks, null_chunks, y):
     null_chunks
     y
 
-    Returns preprocessed chunks for activities and null class
+    Returns preprocessed chunks for activities and null class and the new class labels for the ocd activities
     -------
 
     """
     assert len(chunks["right"]) != 0
     assert len(null_chunks["right"]) != 0
 
-    chunks_ocd = []
-    chunks_null_class = []
+    chunks_ocd_merged = []
+    chunks_null_class_merged = []
 
     chunks_length = len(chunks["right"])
+    chunks_null_length = len(null_chunks["right"])
     y = y.reset_index()
+    # not all actions will be in the new array of chunks (chunks of both hands are ignored). Hence also we need to filter the labels
+    y_filtered = pd.DataFrame(columns=y.columns)
+
     # append action id and merge the data of the active active hand with the indoor chunk
     # TODO: check if indoor is available
-    for right_chunk, left_chunk, indoor_chunk, cl in zip(chunks["right"], chunks["left"], chunks["indoor"], y.iterrows()):
+    for right_chunk, left_chunk, indoor_chunk, (_, cl) in zip(chunks["right"], chunks["left"], chunks["indoor"], y.iterrows()):
         action_id = cl["index"]
         hand = cl["hand"]
-        if hand == "right":
-            chunks_ocd.append(merge_chunks(right_chunk, None, action_id, indoor_chunk))
+        if hand == "both":
+            continue
+        elif hand == "right":
+            chunks_ocd_merged.append(merge_chunks(right_chunk, None, action_id, indoor_chunk))
             # the other hand chunk will get an action id that's higher than all chunk action ids
-            chunks_null_class.append(merge_chunks(left_chunk, None, action_id + chunks_length, indoor_chunk))
+            chunks_null_class_merged.append(merge_chunks(left_chunk, None, action_id + chunks_length, indoor_chunk))
         elif hand == "left":
-            chunks_ocd.append(merge_chunks(left_chunk, None, action_id, indoor_chunk))
-            chunks_null_class.append(merge_chunks(right_chunk, None, action_id + chunks_length, indoor_chunk))
+            chunks_ocd_merged.append(merge_chunks(left_chunk, None, action_id, indoor_chunk))
+            chunks_null_class_merged.append(merge_chunks(right_chunk, None, action_id + chunks_length, indoor_chunk))
+        y_filtered = y_filtered.append(cl)
 
+    assert len(y_filtered) == len(chunks_ocd_merged)
+    assert list(y_filtered.columns) == list(y.columns)
 
     # the highest possible action id that a null sample from the passive hand can have is 2 * chunks_length - 1
-    null_action_ids = range(2 * chunks_length, 2 * chunks_length + chunks_length)
+    null_action_ids = range(2 * chunks_length, 2 * chunks_length + chunks_null_length)
 
     for right_chunk, left_chunk, indoor_chunk, action_id in zip(null_chunks["right"], null_chunks["left"], null_chunks["indoor"], null_action_ids):
         if len(left_chunk):
-            chunks_null_class.append(merge_chunks(left_chunk, None, action_id, indoor_chunk))
+            chunks_null_class_merged.append(merge_chunks(left_chunk, None, action_id, indoor_chunk))
             # again make sure that we don't accidentally get overlapping action ids
-            chunks_null_class.append(merge_chunks(right_chunk, None, action_id + len(null_chunks["right"]), indoor_chunk))
+            chunks_null_class_merged.append(merge_chunks(right_chunk, None, action_id + len(null_chunks["right"]), indoor_chunk))
 
-    assert len(chunks_null_class) == 2 * len(null_action_ids) + len(chunks_ocd)
-
-    assert set([c.loc["action_id"][0] for c in chunks_ocd]).isdisjoint([c.loc["action_id"][0] for c in null_chunks])
-    return chunks_ocd, chunks_null_class
+    # for each ocd chunk we should have a null chunk
+    # additionally we should have 2 chunks for every null chunk
+    assert len(chunks_null_class_merged) == 2 * chunks_null_length + len(chunks_ocd_merged)
+    # ensure that the ids of null chunks and ocd chunks are really disjoint
+    assert set([c.loc[:,"action_id"][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, "action_id"][0] for c in chunks_null_class_merged])
+    return chunks_ocd_merged, chunks_null_class_merged, y_filtered
 
 
 def concat_chunks_for_feature_extraction(chunks, labels):

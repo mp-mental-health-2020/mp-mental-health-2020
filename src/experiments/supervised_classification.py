@@ -10,7 +10,7 @@ from features import extract_timeseries_features
 from file_handling import get_sub_directories
 from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
     preprocess_chunks_for_null_test_with_indoor, \
-    segment_null_classification, segment_windows
+    segment_for_null_classification, segment_windows
 from visualization._visualization import swarm_plot_top_features
 
 
@@ -39,9 +39,9 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     del null_chunks
     # Segmentation
 
-    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(chunks_ocd,
-                                                                                                                           chunks_null_class,
-                                                                                                                           window_size)
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(chunks_ocd,
+                                                                                                                               chunks_null_class,
+                                                                                                                               window_size)
 
     assert len(labels_null_segmented) != 0
     labels_ocd_multiclass = labels.reset_index(drop=True)
