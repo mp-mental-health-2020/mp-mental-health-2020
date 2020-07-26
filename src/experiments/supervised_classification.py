@@ -11,9 +11,8 @@ from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
 from output.output import output_figure
-from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
-    preprocess_chunks_for_null_test_with_indoor, \
-    segment_windows
+from preprocessing import (concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, preprocess_chunks_for_null_test_with_indoor,
+                           segment_for_null_classification, segment_windows)
 from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 
@@ -100,7 +99,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
 
     # Feature extraction for multi class OCD activities incl null
-    X_multi_class_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor,
+    X_multi_class_classification = extract_timeseries_features(multi_class_df, use_indoor=use_indoor,
                                                                use_fingerprinting_approach=use_fingerprinting_approach,
                                                                feature_set_config=feature_calculation_setting)
 
