@@ -23,13 +23,16 @@ from output.output import output_figure
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size, feature_calculation_setting, null_class_included, right_hand_only):
     right_hand_only = False #TODO rework
     path = os.getcwd()
+    participants_folder = '-'.join(experiment_dirs_selected) + "/"
     sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_nullClassIncluded{}/".format(use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included)
-    path = path + "/output_experiments/multi/" + sub_folder
+    path = path + "/output_experiments/multi/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
     sys.stdout = open(path + "console.txt", 'w')
 
+    warnings.warn(participants_folder)
     warnings.warn("Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; null_class_included: {} \n\n".format(use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included))
+    print(participants_folder)
     print("Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; null_class_included: {}".format(use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included))
 
     experiment_dirs = get_sub_directories(experiment_dir_path)
@@ -148,16 +151,19 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
 def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size, feature_calculation_setting):
     right_hand_only = False  # TODO rework
     path = os.getcwd()
+    participants_folder = '-'.join(experiment_dirs_selected) + "/"
     sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}/".format(use_indoor, use_fingerprinting_approach,
                                                                                 feature_calculation_setting.__class__.__name__,
                                                                                 window_size)
-    path = path + "/output_experiments/binary/" + sub_folder
+    path = path + "/output_experiments/binary/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
     sys.stdout = open(path + "console.txt", 'w')
 
+    warnings.warn(participants_folder)
     warnings.warn("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {} \n\n".format(
             use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size))
+    print(participants_folder)
     print("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {}".format(
         use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size))
 
@@ -281,9 +287,15 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
                                                 right_hand in exclude[i]["right_hand_only"]:
                                                     excluded_configuration = True
                                         if not excluded_configuration:
-                                            if setting == "minimal": setting = MinimalFCParameters()
-                                            if setting == "efficient": setting = EfficientFCParameters()
-                                            if setting == "comprehensive": setting = ComprehensiveFCParameters()
+                                            minimal = MinimalFCParameters()
+                                            del minimal['length']
+                                            efficient = EfficientFCParameters()
+                                            del efficient['length']
+                                            comprehensive = ComprehensiveFCParameters()
+                                            del comprehensive['length']
+                                            if setting == "minimal": setting = minimal
+                                            if setting == "efficient": setting = efficient
+                                            if setting == "comprehensive": setting = comprehensive
                                             warnings.warn("Execute experiment number: " + str(number_of_current_experiment) + "/" + str(total_number_of_experiments_without_exclude))
                                             if type == "multi":
                                                 run_multiclass_classification(experiment_dir_path=path,
