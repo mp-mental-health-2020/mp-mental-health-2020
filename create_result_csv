@@ -1,0 +1,85 @@
+#!/bin/bash
+
+rm all_results.csv
+classifier_names=("NB" "LDA" "Logistic Regression" "CART" "Random Forest" "LinearSVC" "XGBoost binary" "XGBoost mult" "SVC")
+echo "experiment|NB|LDA|Logistic_Regression|CART|Random_Forest|LinearSVC|XGBoost_binary|XGBoost_mult|SVC" >> all_results.csv
+
+for D in *; do
+    if [ -d "${D}" ]; then
+	cd "${D}"
+	for D2 in *; do
+	    if [ -d "${D2}" ]; then
+		cd "${D2}"
+		for D3 in *; do
+	    		if [ -d "${D3}" ]; then
+				cd "${D3}"
+				full_path="$D$D2$D3|" 
+				echo -n "$full_path" >> ../../../all_results.csv
+				result=("" "" "" "" "" "" "" "")
+				for classifier in "${classifier_names[@]}" 
+				do
+					if [ "$classifier" == "NB" ]
+					then
+						result[0]="$(grep "^$classifier" console.txt)"
+						result[0]="$(egrep -o '[0-9].{4}' <<< ${result[0]})"
+					fi
+					if [ "$classifier" == "LDA" ]
+					then
+						result[1]="$(grep "^$classifier" console.txt)"
+						result[1]="$(egrep -o '[0-9].{4}' <<< ${result[1]})"
+					fi
+					if [ "$classifier" == "Logistic Regression" ]
+					then
+						result[2]="$(grep "^$classifier" console.txt)"
+						result[2]="$(egrep -o '[0-9].{4}' <<< ${result[2]})"
+					fi
+					if [ "$classifier" == "CART" ]
+					then
+						result[3]="$(grep "^$classifier" console.txt)"
+						result[3]="$(egrep -o '[0-9].{4}' <<< ${result[3]})"
+					fi
+					if [ "$classifier" == "Random Forest" ]
+					then
+						result[4]="$(grep "^$classifier" console.txt)"
+						result[4]="$(egrep -o '[0-9].{4}' <<< ${result[4]})"
+					fi
+					if [ "$classifier" == "LinearSVC" ]
+					then
+						result[5]="$(grep "^$classifier" console.txt)"
+						result[5]="$(egrep -o '[0-9].{4}' <<< ${result[5]})"
+					fi
+					if [ "$classifier" == "XGBoost binary" ]
+					then
+						result[6]="$(grep "^$classifier" console.txt)"
+						result[6]="$(egrep -o '[0-9].{4}' <<< ${result[6]})"
+					fi
+					if [ "$classifier" == "XGBoost mult" ]
+					then
+						result[7]="$(grep "^$classifier" console.txt)"
+						result[7]="$(egrep -o '[0-9].{4}' <<< ${result[7]})"
+					fi
+					if [ "$classifier" == "SVC" ]
+					then
+						result[8]="$(grep "^$classifier" console.txt)"
+						result[8]="$(egrep -o '[0-9].{4}' <<< ${result[8]})"
+					fi
+				done
+				for r in "${result[@]}"
+				do
+					if [ "$r" != "" ]
+					then
+						echo -n "$r|" >> ../../../all_results.csv
+					else
+						echo -n "|" >> ../../../all_results.csv
+					fi
+				done
+				echo "" >> ../../../all_results.csv
+				cd ..
+	    		fi
+		done
+		cd ..
+	    fi
+	done
+	cd ..
+    fi
+done
