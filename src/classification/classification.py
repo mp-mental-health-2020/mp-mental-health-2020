@@ -1,3 +1,5 @@
+from multiprocessing import Pool
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sn
@@ -10,29 +12,47 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-#from xgboost import XGBClassifier;
+from xgboost import XGBClassifier;
+from evaluation._evaluation import auc_roc_cv
 from output.output import output_figure
 
-models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr'))]#, ('LDA', LinearDiscriminantAnalysis()),
-          #('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)),
-          #('NB', GaussianNB()), ('SVC', SVC())]
+models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()), \
+          ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), \
+          ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42, n_jobs=4)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42,  n_jobs=4))]
 
 #('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42)),
 
+X_g = None
+y_g = None
+path_g = None
+binary_g = None
 
+def classify_all(X, y, path, binary):
+    global X_g
+    global y_g
+    global path_g
+    global binary_g
+    X_g = X
+    y_g = y
+    path_g = path
+    binary_g = binary
+    with Pool(9) as p:
+        p.map(classify_process, models)
 
-def classify_all(X, y, path):
-    for name, model in models:
-        scores = cross_val_score(model, X, y, cv=8)
+def classify_process(models):
+    name = models[0]
+    model = models[1]
+    if (not (binary_g and name == 'XGBoost mult')) and (not (not binary_g and name == 'XGBoost binary')):
+        scores = cross_val_score(model, X_g, y_g, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
 
         #if label_ids:
         # confusion matrix
 
-        y_pred = cross_val_predict(model, X, y, cv=8)
+        y_pred = cross_val_predict(model, X_g, y_g, cv=8)
 
-        labels_set = sorted(list(set(y)))
-        conf_mat = confusion_matrix(y, y_pred)
+        labels_set = sorted(list(set(y_g)))
+        conf_mat = confusion_matrix(y_g, y_pred)
         # print(conf_mat)
         df_cm = pd.DataFrame(conf_mat, index=labels_set,
                              columns=labels_set)
@@ -41,6 +61,8 @@ def classify_all(X, y, path):
         fig = plt.figure(figsize=(10, 7))
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
-        output_figure(fig=fig, path=path, name=("confusion_matrix_"+name), format="png")
+        output_figure(fig=fig, path=path_g, name=("confusion_matrix_"+name), format="png")
+        if binary_g:
+            output_figure(fig=auc_roc_cv(X = X_g, y = y_g, model = model), path=path_g, name=("auc_roc_"+name), format="png")
 
 

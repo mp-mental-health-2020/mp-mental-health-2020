@@ -1,27 +1,14 @@
 {
-	"classification_types": ["multi"],
-	"experiment_dir_paths": ["../../data/phyphox/full recordings/"],
+	"classification_types": ["binary"],
+	"experiment_dir_paths": ["./data/phyphox/full recordings/"],
 	"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
+	"activities": [],
 	"use_indoor": [false, true],
-	"feature_calculation_settings": ["minimal", "efficient"],
-	"window_sizes": [50, 100],
+	"use_fingerprinting_approach": [false, true],
+	"feature_calculation_settings": ["minimal"],
+	"window_sizes": [100],
+	"null_class_included": [true, false],
+	"right_hand_only": [false],
 	"exclude":
-		[
-			{
-				"classification_types": ["multi"],
-				"experiment_dir_paths": ["../../data/phyphox/full recordings/"],
-				"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
-				"use_indoor": [true],
-				"feature_calculation_settings": ["efficient","minimal"],
-				"window_sizes": [50,100]
-			},
-			{
-				"classification_types": ["multi"],
-				"experiment_dir_paths": ["../../data/phyphox/full recordings/"],
-				"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
-				"use_indoor": [false],
-				"feature_calculation_settings": ["efficient"],
-				"window_sizes": [50,100]
-			}
-		]
+		[]
 }
