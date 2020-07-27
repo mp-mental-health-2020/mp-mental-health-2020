@@ -98,7 +98,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     del chunks_ocd
     del chunks_null_class
 
-    assert len(set(labels_ocd_multiclass)) == len(set(labels_ocd_segmented_multiclass))
+    #assert len(set(labels_ocd_multiclass)) == len(set(labels_ocd_segmented_multiclass)) TODO adjust if activities are not in segments any more (200)
 
     # reuse chunks_ocd_segmented from the segmentation for the binary classifier
     assert len(labels_ocd_segmented_multiclass) == len(chunks_ocd_segmented)
@@ -131,21 +131,21 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
                              labels_multi_class_classification.unique(),
                              ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
                               'C17', 'C18']), path=path, name="pca_2d_with_null", format="png")
-
-    output_figure(fig=pca_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
-                             labels_multi_class_classification.unique()[0:14],
-                             ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
-                              'C17', 'C18']), path=path, name="pca_2d_without_null", format="png")
+    if null_class_included:
+        output_figure(fig=pca_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+                                 labels_multi_class_classification.unique()[0:14],
+                                 ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+                                  'C17', 'C18']), path=path, name="pca_2d_without_null", format="png")
 
     output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
                              labels_multi_class_classification.unique(),
                              ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
                               'C17', 'C18'], n_iter=1000, perplexity=30), path=path, name="sne_2d_with_null", format="png")
-
-    output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
-                             labels_multi_class_classification.unique()[0:14],
-                             ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
-                              'C17', 'C18'], n_iter=1000, perplexity=30), path=path, name="sne_2d_without_null", format="png")
+    if null_class_included:
+        output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+                                 labels_multi_class_classification.unique()[0:14],
+                                 ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+                                  'C17', 'C18'], n_iter=1000, perplexity=30), path=path, name="sne_2d_without_null", format="png")
 
     classify_all(X_multi_class_classification_scaled, labels_multi_class_classification, path, binary=False)
 
@@ -224,6 +224,14 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     scaler = StandardScaler()
     X_null_classification = scaler.fit_transform(X_null_classification_selected)
 
+    output_figure(fig=pca_2d(X_null_classification, labels_null_classification,
+                             labels_null_classification.unique(),
+                             ['C1', 'C2']), path=path, name="pca_2d", format="png")
+
+    output_figure(fig=sne_2d(X_null_classification, labels_null_classification,
+                             labels_null_classification.unique(),
+                             ['C1', 'C2'], n_iter=1000, perplexity=30), path=path, name="sne_2d", format="png")
+
     classify_all(X_null_classification, labels_null_classification, path, binary=True)
 
     #labels_null_classification.reset_index(drop=True)
@@ -266,13 +274,13 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
     exclude = config["exclude"]
     excluded_configuration = False
 
-    for type in classification_types:
-        for path in experiment_dir_paths:
-            for experiment_dir in experiment_dirs_selected:
-                for indoor in use_indoor:
-                    for fingerprinting in use_fingerprinting_approach:
-                        if (not use_indoor) and fingerprinting: continue
-                        for setting in feature_calculation_settings:
+    for setting in feature_calculation_settings:
+        for type in classification_types:
+            for path in experiment_dir_paths:
+                for experiment_dir in experiment_dirs_selected:
+                    for indoor in use_indoor:
+                        for fingerprinting in use_fingerprinting_approach:
+                            if (not indoor) and fingerprinting: continue
                             for size in window_sizes:
                                 for included in null_class_included:
                                     if type=="binary" and (not included): continue
