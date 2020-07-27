@@ -18,6 +18,23 @@ from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
                                   feature_calculation_setting):
+    """
+
+    Parameters
+    ----------
+    experiment_dir_path
+    experiment_dirs_selected
+    use_indoor : bool
+        Use the indoor positioning as a feature.
+    use_fingerprinting_approach : bool
+        Use the fingerprinting instead of the most powerful signal approach.
+    window_size
+    feature_calculation_setting
+
+    Returns
+    -------
+
+    """
     path = os.getcwd()
     sub_folder = "indoor{}_features{}_windowSize{}/".format(use_indoor, feature_calculation_setting.__class__.__name__, window_size)
     path = path + "/output_experiments/multi/" + sub_folder
@@ -33,8 +50,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
     sample_rate = 50
-    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor,
-                                                     use_fingerprinting_approach=use_fingerprinting_approach)
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor)
 
     del experiment_dir_path
     del experiment_dirs
@@ -188,3 +204,10 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
 
 def test_run_multiclass_recordings_clf():
     run_experiments(config_file='./config_files/experiments_config.json')
+
+
+def test_run_multiclass_classification():
+    # for debugging purposes
+    run_multiclass_classification(experiment_dir_path="../../data/phyphox/full recordings/", experiment_dirs_selected=["Wiktoria"],
+                                  use_indoor=True,
+                                  use_fingerprinting_approach=False, window_size=50, feature_calculation_setting=MinimalFCParameters())

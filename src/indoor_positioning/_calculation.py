@@ -3,106 +3,78 @@ import math
 import numpy as np
 import pandas as pd
 
-from src.indoor_positioning import get_recording_as_data_frame, get_specific_indoor_recording
+from indoor_positioning.constant import BEACON_MINORS, MISSING_VALUE
 
 
-def test_get_beacons_for_proximity_approach():
-    recording = get_specific_indoor_recording()
-    df = get_recording_as_data_frame(recording)
+def get_prepared_beacon_data(df, beacon_minors=None, mirrored_setup=False, missing_value=MISSING_VALUE):
+    df = prepare_data_frame(df, mirrored_setup=mirrored_setup)
 
-    # filter out incorrect placed beacons
-    df = df[df["minor"] != 2]
-    df = df[df["minor"] != 10]
-
-    new_df = get_beacons_for_proximity_approach(df)
-    print()
-
-
-def get_beacons_for_proximity_approach(df, duration=1000, aggregation_function="mean"):
-    grouped = df.groupby(["major", "minor"])
     series = df["timestamp"]
     start_timestamp = series.min()
+    end_timestamp = series.max()
 
-    df = grouped.apply(batch_data, duration=duration, start_timestamp=start_timestamp, aggregation_function=aggregation_function)
+    result = pd.DataFrame({"timestamp": []})
 
-    # TODO: sort by
+    if not beacon_minors:
+        beacon_minors = BEACON_MINORS
 
-    # merge batches with identical timestamp by using the maximum rssi value -> strongest signal
-    df2 = df.groupby(["timestamp"])["rssi"].max()
-    df2 = df2.to_frame().reset_index()
-    df = df.merge(df2, how="right", on=["timestamp", "rssi"])
-    df.drop("major", axis=1, inplace=True)
-    df.sort_values(by="timestamp", inplace=True)
-    df.reset_index(inplace=True, drop=True)
+    for minor in beacon_minors:
+        current_df = df[df["minor"] == minor]
+        current_df.drop(["major", "minor"], axis=1, inplace=True)
+        current_df = batch_data(current_df, start_timestamp=start_timestamp, end_timestamp=end_timestamp, duration=500, missing_value=missing_value)
+        current_df.rename(columns={"rssi": minor}, inplace=True)
+        result = result.merge(current_df, on="timestamp", how="outer")
+
+    return result
+
+
+def prepare_data_frame(df, mirrored_setup=False):
+    if mirrored_setup:
+        # Special setup used for the recordings of Charlotte and Lisa. They sat in room 2 with beacons 11 and 9 simulating beacon 5 and 6 as to not
+        # mess with original setup. Therefore filter out 5 and 6 and map 11 to 5 and 9 to 6.
+        df = df[df["minor"] != 5]
+        df = df[df["minor"] != 6]
+        df["minor"].replace(11, 5, inplace=True)
+        df["minor"].replace(9, 6, inplace=True)
+    else:
+        # filter out configuration beacon
+        df = df[df["minor"] != 9]
     return df
 
 
-def get_multiple_beacons_for_proximity_approach():
-    recording = get_specific_indoor_recording()
-    df = get_recording_as_data_frame(recording)
-
-    # filter out incorrect placed beacons
-    # df = df[df["minor"] != 2]
-    # df = df[df["minor"] != 10]
-
-    grouped = df.groupby(["major", "minor"])
-    series = df["timestamp"]
-    start_timestamp = series.min()
-    df = grouped.apply(batch_data, duration=1000, start_timestamp=start_timestamp)
-
-    timestamps = df["timestamp"].drop_duplicates()
-
-    draw_threshold = 5
-    new_df = pd.DataFrame(columns=df.columns)
-    for timestamp in timestamps:
-        selected_df = df[df["timestamp"] == timestamp]
-        max_rssi = selected_df["rssi"].max()
-        s = selected_df[selected_df["rssi"] > (max_rssi - draw_threshold)]
-        new_df = new_df.append(s, ignore_index=True)
-
-    labels = new_df["minor"].apply(get_label)
-    new_df["labels"] = labels
-
-    new_df["timestamp"] = new_df["timestamp"] - new_df["timestamp"].min()
-    new_df.drop("major", axis=1, inplace=True)
-    new_df.sort_values(by="timestamp", inplace=True)
-    new_df.reset_index(inplace=True, drop=True)
-    return new_df
-
-
-def batch_data(df: pd.DataFrame, start_timestamp=None, duration=500, aggregation_function="mean"):
+def batch_data(df: pd.DataFrame, start_timestamp=None, end_timestamp=None, duration=500, aggregation_function="mean", missing_value=MISSING_VALUE):
     # normalize timestamps over all beacons
     if not start_timestamp:
         start_timestamp = df["timestamp"].get_values()[0]
 
-    # TODO: this assumes that major and minor are constant
-    #  for methods like highest/lowest etc. this would not work
-    major = df["major"].to_numpy()[0]
-    minor = df["minor"].to_numpy()[0]
-
     # create indices for batching based on duration
-    indices = ((df["timestamp"] - start_timestamp) / duration).apply(math.floor)
-    frame = {'indices': indices, 'rssi': df["rssi"]}
+    timestamps = (((df["timestamp"] - start_timestamp) / duration).apply(math.floor)) * duration + start_timestamp
+    frame = {'timestamp': timestamps, 'rssi': df["rssi"]}
 
     df_new = pd.DataFrame(frame)
     # apply aggregation function for batched data
     if not callable(aggregation_function):
         aggregation_function = get_aggregation_function(aggregation_function)
-    df_new = df_new.groupby("indices").apply(aggregation_function)
+    df_new = df_new.groupby("timestamp").apply(aggregation_function)
+    df_new.reset_index(drop=True, inplace=True)
 
-    # calculate batched timestamps based on shared timestamp
-    timestamps = df_new["indices"] * duration + start_timestamp
+    # add missing timestamps
+    number_of_runs = math.ceil((end_timestamp - start_timestamp) / duration)
+    all_timestamps = np.array([start_timestamp + duration * index for index in range(number_of_runs)])
 
-    df_new["timestamp"] = timestamps
-    df_new["major"] = [major] * len(timestamps)
-    df_new["minor"] = [minor] * len(timestamps)
-    df_new.drop(columns=["indices"], inplace=True)
-    return df_new
+    if not df_new.empty:
+        current_timestamps = df_new["timestamp"].values
+    else:
+        current_timestamps = []
 
+    missing_timestamps = [timestamp for timestamp in all_timestamps if timestamp not in current_timestamps]
+    missing_values = [missing_value] * len(missing_timestamps)
 
-def apply_kalman_filter():
-    # irrelevant for now
-    pass
+    missing_frame = {'timestamp': missing_timestamps, 'rssi': missing_values}
+    missing_df = pd.DataFrame(missing_frame)
+
+    result = df_new.append(missing_df, ignore_index=True)
+    return result.sort_values("timestamp", axis=0, ascending=True)
 
 
 def get_aggregation_function(function_name):
@@ -110,71 +82,3 @@ def get_aggregation_function(function_name):
         return np.mean
     elif function_name == "median":
         return np.median
-
-
-def get_label(minor):
-    # Version 1 from 29.06.2020
-    if minor == 1:
-        return ["broken"]
-    elif minor == 2:
-        return ["hand-sanitizer"]
-    elif minor == 3:
-        return ["oven", "fridge", "sink"]
-    elif minor == 4:
-        return ["sink"]
-    elif minor == 5:
-        return ["window"]
-    elif minor == 6:
-        return ["window"]
-    elif minor == 7:
-        return []
-    elif minor == 8:
-        return []
-    elif minor == 9:
-        return ["window"]
-    elif minor == 10:
-        return []
-    else:
-        return ["unknown"]
-
-
-def get_room(minor):
-    # Version 1 from 29.06.2020
-    if minor == 1:
-        return "broken"
-    elif minor == 2:
-        return "entrance"
-    elif minor == 3:
-        return "kitchen"
-    elif minor == 4:
-        return "bathroom men"
-    elif minor == 5:
-        return "main room"
-    elif minor == 6:
-        return "main room"
-    elif minor == 7:
-        return "hallway"
-    elif minor == 8:
-        return "hallway"
-    elif minor == 9:
-        return "second room"
-    elif minor == 10:
-        return "bathroom women"
-    else:
-        return "unknown"
-
-
-# Trilateration / Multilateration
-
-
-# Fingerprinting
-
-
-def test_duration():
-    start = 1593784111687
-    end = 1593785187858
-    first = 1593784111733
-    last = 1593785187852
-    print(((end - start) / 1000) / 60)
-    print(first - start)
-    print(end - last)

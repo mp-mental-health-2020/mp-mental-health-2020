@@ -21,7 +21,7 @@ def merge_chunks(chunk_left, chunk_right, action_id, chunk_indoor=None):
     c_l = chunk_left.reset_index()
     chunks_to_merge = [c_l]
 
-    if chunk_right:
+    if chunk_right is not None:
         c_r = chunk_right.reset_index(drop=True)
 
         if ACTION_ID_COL in list(c_r.columns):
@@ -171,7 +171,7 @@ def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
     # additionally we should have 2 chunks for every null chunk
     assert len(chunks_null_class_merged) == 2 * chunks_null_length + len(chunks_ocd_merged)
     # ensure that the ids of null chunks and ocd chunks are really disjoint
-    assert set([c.loc[:,"action_id"][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, "action_id"][0] for c in chunks_null_class_merged])
+    assert set([c.loc[:, "action_id"][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, "action_id"][0] for c in chunks_null_class_merged])
     return chunks_ocd_merged, chunks_null_class_merged, y_filtered
 
 

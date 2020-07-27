@@ -4,7 +4,8 @@ from random import sample
 import pandas as pd
 
 import file_handling
-from indoor_positioning import get_beacons_for_fingerprinting_approach, get_beacons_for_proximity_approach, get_file_as_data_frame
+from indoor_positioning import get_file_as_data_frame, get_prepared_beacon_data
+from indoor_positioning.constant import BEACON_MINORS
 from preprocessing import align_data
 from src import preprocessing
 from src.file_handling import get_file_names_in_directory_for_pattern, get_project_directory
@@ -102,15 +103,12 @@ def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=Tr
                                              output_timestamp_unit="milliseconds",
                                              timestamp_key=timestamp_column_name)
         data_frame.sort_index(inplace=True)
-        # we either have multiple data frames for different hands or just one that we can return right away
         if hand:
             data_frames[hand] = data_frame
-        else:
-            return data_frame
     return data_frames
 
 
-def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True, use_fingerprinting_approach=True):
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True):
     """
 
     Parameters
@@ -162,7 +160,7 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
                        key, data_frame in data_frames.items()}
 
         if require_indoor:
-            indoor_data = get_indoor_data(directory, sample_rate, use_fingerprinting_approach=use_fingerprinting_approach, offsets=offsets)
+            indoor_data = get_indoor_data(directory, sample_rate, offsets=offsets)
             if indoor_data is None:
                 continue
             data_frames["indoor"] = indoor_data
@@ -200,7 +198,7 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
     return chunks, null_chunks, y
 
 
-def get_indoor_data(directory, sample_rate, use_fingerprinting_approach=True, offsets=None):
+def get_indoor_data(directory, sample_rate, offsets=None):
     """
     TODO 24.07.2020: outdated documentation
     Gets the aggregated indoor positioning data from the given directory with synchronization performed, if given. Data will be aggregated to only
@@ -213,8 +211,6 @@ def get_indoor_data(directory, sample_rate, use_fingerprinting_approach=True, of
         Path to the directory containing the data.
     sample_rate : int
         Requested frequency of data after interpolation in Hz.
-    use_fingerprinting_approach : bool, default=True
-        Use the fingerprinting instead of the most powerful signal approach.
     offsets : dict, default=None
         If supplied and it contains the 'indoor' key, the value will be used to remove the first few seconds of data for synchronization purposes.
         Value is given in seconds.
@@ -224,25 +220,31 @@ def get_indoor_data(directory, sample_rate, use_fingerprinting_approach=True, of
         If data is available, returns pd.DataFrame with synchronized, aggregated and interpolated indoor positioning data. If not, returns None.
     """
     try:
-        indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
-        indoor_data_frame = get_file_as_data_frame(indoor_file)
+        # long recordings are split into multiple files, as energy saving options of some smart-phones will terminate bluetooth scanning without
+        # notification making it impossible to handle it in app. An threshold based on experience is 30 minutes.
+        indoor_files = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")
 
-        # synchronization
-        if offsets and "indoor" in offsets.keys():
-            offset = float(offsets["indoor"])
-            start_timestamp = indoor_data_frame["timestamp"][0]
-            # offset is save in seconds
-            synchronized_start_timestamp = start_timestamp + offset * 1000
-            indoor_data_frame = indoor_data_frame[indoor_data_frame["timestamp"] >= synchronized_start_timestamp]
+        indoor_data_frame_structure = dict()
+        indoor_data_frame_structure["timestamp"] = []
 
-            if not use_fingerprinting_approach:
-                # filter out synchronization beacon
-                indoor_data_frame = indoor_data_frame[indoor_data_frame["minor"] != 9]
+        for beacon_id in BEACON_MINORS:
+            indoor_data_frame_structure[beacon_id] = []
 
-        if use_fingerprinting_approach:
-            indoor_data_frame = get_beacons_for_fingerprinting_approach(indoor_data_frame)
-        else:
-            indoor_data_frame = get_beacons_for_proximity_approach(indoor_data_frame)
+        indoor_data_frame = pd.DataFrame(indoor_data_frame_structure)
+
+        for indoor_file in indoor_files:
+            current_indoor_data_frame = get_file_as_data_frame(indoor_file)
+
+            # synchronization
+            if offsets and "indoor" in offsets.keys():
+                offset = float(offsets["indoor"])
+                start_timestamp = current_indoor_data_frame["timestamp"][0]
+                # offset is save in seconds
+                synchronized_start_timestamp = start_timestamp + offset * 1000
+                current_indoor_data_frame = current_indoor_data_frame[current_indoor_data_frame["timestamp"] >= synchronized_start_timestamp]
+
+            current_indoor_data_frame = get_prepared_beacon_data(current_indoor_data_frame)
+            indoor_data_frame = indoor_data_frame.append(current_indoor_data_frame, ignore_index=True)
 
         indoor_data_frame = set_time_delta_as_index(indoor_data_frame, origin_timestamp_unit='ms',
                                                     output_timestamp_unit="milliseconds",
