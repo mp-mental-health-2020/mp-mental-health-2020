@@ -28,6 +28,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     path = path + "/output_experiments/multi/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
+    else: return
     sys.stdout = open(path + "console.txt", 'w')
 
     warnings.warn(participants_folder)
@@ -158,6 +159,7 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     path = path + "/output_experiments/binary/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
+    else: return
     sys.stdout = open(path + "console.txt", 'w')
 
     warnings.warn(participants_folder)
@@ -224,23 +226,23 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
 
     classify_all(X_null_classification, labels_null_classification, path, binary=True)
 
-    labels_null_classification.reset_index(drop=True)
+    #labels_null_classification.reset_index(drop=True)
 
     # add the old labels to the column names of the features again
-    X_null_classification_selected = pd.DataFrame(X_null_classification, columns=X_null_classification_selected.columns)
+    #X_null_classification_selected = pd.DataFrame(X_null_classification, columns=X_null_classification_selected.columns)
 
     # reduce the amount of selected features and append the labels as an extra column
-    X_y = pd.concat([X_null_classification_selected.iloc[:, :5], labels_null_classification.reset_index(drop=True)],
-                    axis=1)
+    #X_y = pd.concat([X_null_classification_selected.iloc[:, :5], labels_null_classification.reset_index(drop=True)],
+    #                axis=1)
 
-    label_vals = {11: "null class", 12: "OCD activity"}
+    #label_vals = {11: "null class", 12: "OCD activity"}
     # rename the last column
-    cols = [c for c in X_y.columns]
-    cols[-1] = "class"
-    X_y.columns = cols
-    X_y.replace({"class": label_vals}, inplace=True)
+    #cols = [c for c in X_y.columns]
+    #cols[-1] = "class"
+    #X_y.columns = cols
+    #X_y.replace({"class": label_vals}, inplace=True)
 
-    output_figure(fig=swarm_plot_top_features(pd.DataFrame(X_y).reset_index()), path=path, name="swarm_plot_top_features", format="png")
+    #output_figure(fig=swarm_plot_top_features(pd.DataFrame(X_y).reset_index()), path=path, name="swarm_plot_top_features", format="png")
 
 
 def run_experiments(config_file='./config_files/experiments_config.json'):
@@ -269,10 +271,11 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
             for experiment_dir in experiment_dirs_selected:
                 for indoor in use_indoor:
                     for fingerprinting in use_fingerprinting_approach:
-                        if not use_indoor: fingerprinting=False
+                        if (not use_indoor) and fingerprinting: continue
                         for setting in feature_calculation_settings:
                             for size in window_sizes:
                                 for included in null_class_included:
+                                    if type=="binary" and (not included): continue
                                     for right_hand in right_hand_only:
                                         for i in range(len(exclude)):
                                             if  not excluded_configuration and \
