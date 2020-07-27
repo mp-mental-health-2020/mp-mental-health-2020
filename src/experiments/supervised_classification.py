@@ -1,10 +1,8 @@
+import os
+import sys
 import warnings
 
 import matplotlib
-import os
-import sys
-import pandas as pd
-
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
 from tsfresh.feature_extraction import ComprehensiveFCParameters, EfficientFCParameters, MinimalFCParameters
@@ -14,11 +12,11 @@ from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
+from output.output import output_figure
 from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
     preprocess_chunks_for_null_test_with_indoor, \
     segment_for_null_classification, segment_windows
-from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d, swarm_plot_top_features
-from output.output import output_figure
+from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
@@ -291,7 +289,7 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
     right_hand_only = config["right_hand_only"]
     if True in use_indoor:
         total_number_of_experiments_without_exclude = len(classification_types) * len(experiment_dir_paths) * len(experiment_dirs_selected) * (
-                    len(use_indoor) + len(use_fingerprinting_approach) - 1) * len(feature_calculation_settings) * len(window_sizes) * len(
+                len(use_indoor) + len(use_fingerprinting_approach) - 1) * len(feature_calculation_settings) * len(window_sizes) * len(
             null_class_included)
     else:
         total_number_of_experiments_without_exclude = len(classification_types) * len(experiment_dir_paths) * len(experiment_dirs_selected) * len(
