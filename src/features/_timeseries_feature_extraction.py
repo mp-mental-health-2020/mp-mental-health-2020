@@ -1,29 +1,44 @@
+import numpy as np
 import pandas as pd
-import tsfresh
 from tsfresh import extract_features
+from tsfresh.feature_extraction import ComprehensiveFCParameters
 
 
-def extract_timeseries_features(timeseries, use_indoor, feature_set_config=tsfresh.feature_extraction.settings.ComprehensiveFCParameters()):
+def extract_timeseries_features(timeseries, use_indoor, use_fingerprinting_approach, feature_set_config=None):
+    if not feature_set_config:
+        feature_set_config = ComprehensiveFCParameters()
     if use_indoor:
-        indoor_features = extract_indoor_feature(timeseries, column_id='action_id')
-    timeseries = timeseries.drop(["rssi", "minor"], axis=1)
-    assert "rssi" not in timeseries.columns
-    assert "minor" not in timeseries.columns
-    features = extract_features(timeseries, column_id='action_id', default_fc_parameters=feature_set_config)
+        if use_fingerprinting_approach:
+            indoor_df = timeseries.loc[:, [2, 3, 4, 5, 6, 7, 8, 10, "action_id", "segment_id"]]
+            indoor_features = indoor_df.groupby(["action_id", "segment_id"]).apply(np.mean)
+            indoor_features.drop(["action_id", "segment_id"], axis=1, inplace=True)
+            timeseries.drop([2, 3, 4, 5, 6, 7, 8, 10, ], axis=1, inplace=True)
+            # TODO: re-create tuple index for merge
+        else:
+            indoor_features = extract_indoor_feature(timeseries, column_id=['action_id', "segment_id"])
+            timeseries.drop(["rssi", "minor"], axis=1, inplace=True)
+    timeseries.drop(["action_id", "segment_id"], axis=1, inplace=True)
+    features = extract_features(timeseries, column_id='combined_id', default_fc_parameters=feature_set_config)
     if use_indoor:
+        # One is tuple, one is multi index
+        # features.reset_index(drop=True, inplace=True)
+        # indoor_feature.reset_index(drop=True, inplace=True)
+        indoor_features.set_index(features.index, inplace=True)
         features = features.merge(indoor_features, right_index=True, left_index=True)
-        assert "minor" in features.columns
     return features
 
 
-def extract_indoor_feature(data_frame, column_id="action_id"):
-    indoor_df = data_frame.loc[:, ["action_id", "rssi", "minor"]]
-    indoor_df.set_index("action_id", inplace=True)
-    indoor_series = indoor_df.loc[:, "minor"]
-    minors = indoor_series.groupby(level=0).apply(get_indoor_minor)
-    return minors
+def extract_indoor_feature(data_frame, column_id=None):
+    if not column_id:
+        column_id = ["action_id", "segment_id"]
+    indoor_df = data_frame.loc[:, ["action_id", "segment_id", "rssi", "minor"]]
+
+    # indoor_series = indoor_df.loc[:, "minor"]
+    # minors = indoor_series.groupby(column_id).apply(get_indoor_minor)
     # work around to prevent indoor feature extraction from crashing:
     # return only the minor and drop the rssi
+    # return minors
+
     indoor_df = indoor_df.groupby(column_id).apply(merge_indoor_values)
     return indoor_df
 

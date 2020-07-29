@@ -17,19 +17,22 @@ def plot_duration_histogram(chunks):
     """
     durations = np.array([len(c) / 50 for c in chunks])
     print("Mean {:1.2f} +/- {:1.2f}".format(durations.mean(), durations.std()))
+    fig = plt.figure(figsize=(8, 8))
     plt.hist(durations, bins=range(0, 40))
     plt.xlabel("duration in s")
     plt.ylabel("# of samples")
     plt.legend()
     plt.show()
+    return fig
 
 
 def swarm_plot_top_features(data):
     sns.set(style="whitegrid", palette="muted")
     data = pd.melt(data, id_vars=["index", "class"], var_name="features")
     print(data.head())
-    plt.figure(figsize=(25,10))
+    fig = plt.figure(figsize=(25,10))
     sns.swarmplot(x="features", y="value", hue="class", data=data)
+    return fig
 
 
 def pca_2d(X, y, targets, colors):
@@ -54,6 +57,7 @@ def pca_2d(X, y, targets, colors):
                    , c=color)
     ax.legend(targets)
     ax.grid()
+    return fig
 
 
 def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
@@ -80,6 +84,7 @@ def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
                    , c=color)
     ax.legend(targets)
     ax.grid()
+    return fig
 
 def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n_iter=5000, perplexity=25):
     from sklearn.manifold import TSNE
@@ -103,6 +108,7 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
                    , c=color)
     ax.legend(targets)
     ax.grid()
+    return fig
 
 def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n_iter=5000, perplexity=25):
     from sklearn.manifold import TSNE
@@ -128,3 +134,4 @@ def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
                    , c=color)
     ax.legend(targets)
     ax.grid()
+    return fig

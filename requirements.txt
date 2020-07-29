@@ -8,3 +8,4 @@ seaborn
 tsfresh
 xgboost
 nbdime
+nose

@@ -1,8 +1,14 @@
+import warnings
+
+import matplotlib
+import os
+import sys
+import pandas as pd
+
 from sklearn.preprocessing import StandardScaler
 from tsfresh import select_features
-from tsfresh.feature_extraction import MinimalFCParameters, EfficientFCParameters
+from tsfresh.feature_extraction import ComprehensiveFCParameters, EfficientFCParameters, MinimalFCParameters
 from tsfresh.utilities.dataframe_functions import impute
-import pandas as pd
 
 from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
@@ -10,17 +16,37 @@ from features import extract_timeseries_features
 from file_handling import get_sub_directories
 from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
     preprocess_chunks_for_null_test_with_indoor, \
-    segment_null_classification, segment_windows
-from visualization._visualization import swarm_plot_top_features
+    segment_for_null_classification, segment_windows
+from visualization._visualization import plot_duration_histogram, pca_2d, sne_2d, swarm_plot_top_features
+from output.output import output_figure
 
+def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size, feature_calculation_setting, null_class_included, right_hand_only):
+    right_hand_only = False #TODO rework
+    path = os.getcwd()
+    participants_folder = '-'.join(experiment_dirs_selected) + "/"
+    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_nullClassIncluded{}/".format(use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included)
+    path = path + "/output_experiments/multi/" + participants_folder + sub_folder
+    if not os.path.exists(path):
+        os.makedirs(path)
+    else: return
+    sys.stdout = open(path + "console.txt", 'w')
 
-def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, window_size, feature_calculation_setting):
+    warnings.warn(participants_folder)
+    warnings.warn("Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; null_class_included: {} \n\n".format(use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included))
+    print(participants_folder)
+    print("Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; null_class_included: {}".format(use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included))
+
     experiment_dirs = get_sub_directories(experiment_dir_path)
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
     sample_rate = 50
-    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor)
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor,
+                                                     use_fingerprinting_approach=use_fingerprinting_approach)
 
+    #TODO test right hand only and change activities to only include both and right handed activities
+    if right_hand_only:
+        chunks = chunks["right"]
+        null_chunks = null_chunks["right"]
     del experiment_dir_path
     del experiment_dirs
     print("Finished reading data")
@@ -28,6 +54,9 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     # we only need the y vector for the multi class clf
     y.reset_index(inplace=True)
     labels = y.loc[:, "label"].squeeze()
+
+    output_figure(fig=plot_duration_histogram(chunks["right"]), path=path, name="duration_histogram_activities", format="png")
+    output_figure(fig=plot_duration_histogram(null_chunks["right"]), path=path, name="duration_histogram_null", format="png")
 
     # Preprocess data
     if use_indoor:
@@ -39,13 +68,33 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     del null_chunks
     # Segmentation
 
-    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_null_classification(chunks_ocd,
-                                                                                                                           chunks_null_class,
-                                                                                                                           window_size)
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(chunks_ocd,
+                                                                                                                               chunks_null_class,
+                                                                                                                               window_size)
 
     assert len(labels_null_segmented) != 0
+
     labels_ocd_multiclass = labels.reset_index(drop=True)
+
+    labels_ocd_multiclass = labels_ocd_multiclass.str.replace("  ", " ").str.strip()
+
+    assert set(labels_ocd_multiclass) == {'checking oven',
+                                          'cleaning cup',
+                                          'cleaning floor',
+                                          'cleaning leg',
+                                          'cleaning table',
+                                          'cleaning window',
+                                          'drying hands',
+                                          'pulling door',
+                                          'pulling hair',
+                                          'pushing door',
+                                          'sitting down',
+                                          'standing up',
+                                          'walking',
+                                          'washing hands'}
+
     _, labels_ocd_segmented_multiclass = segment_windows(chunks_ocd, labels_ocd_multiclass.to_numpy(), window_size)
+
     del chunks_ocd
     del chunks_null_class
 
@@ -54,120 +103,223 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     # reuse chunks_ocd_segmented from the segmentation for the binary classifier
     assert len(labels_ocd_segmented_multiclass) == len(chunks_ocd_segmented)
 
-    mulit_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
-        [chunks_ocd_segmented, chunks_null_segmented],
-        [labels_ocd_segmented_multiclass, labels_null_segmented])
-    assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
-
-    labels_multi_class_classification = labels_multi_class_classification.str.replace("  ", " ").str.strip()
-
-    assert set(labels_multi_class_classification) == {'checking oven',
-                                                      'cleaning cup',
-                                                      'cleaning floor',
-                                                      'cleaning leg',
-                                                      'cleaning table',
-                                                      'cleaning window',
-                                                      'drying hands',
-                                                      'null class',
-                                                      'pulling door',
-                                                      'pulling hair',
-                                                      'pushing door',
-                                                      'sitting down',
-                                                      'standing up',
-                                                      'walking',
-                                                      'washing hands'}
+    if null_class_included:
+        multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
+            [chunks_ocd_segmented, chunks_null_segmented],
+            [labels_ocd_segmented_multiclass, labels_null_segmented])
+        assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass)) + 1
+    else:
+        multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
+            [chunks_ocd_segmented],
+            [labels_ocd_segmented_multiclass])
+        assert len(set(labels_multi_class_classification)) == len(set(labels_ocd_segmented_multiclass))
 
     # Feature extraction for multi class OCD activities incl null
-    X_multi_class_classification = extract_timeseries_features(mulit_class_df, use_indoor=use_indoor,
+    X_multi_class_classification = extract_timeseries_features(multi_class_df, use_indoor=use_indoor,
+                                                               use_fingerprinting_approach=use_fingerprinting_approach,
                                                                feature_set_config=feature_calculation_setting)
+
     # Feature selection for multi class OCD activities incl null
     impute(X_multi_class_classification)
     X_multi_class_classification_selected = select_features(X_multi_class_classification,
                                                             labels_multi_class_classification)
+
     scaler = StandardScaler()
     X_multi_class_classification_scaled = scaler.fit_transform(X_multi_class_classification_selected)
 
-    print("Multi class classification: using indoor: {}; FC params: {}; window_size {}".format(use_indoor,feature_calculation_setting.__class__.__name__, window_size))
-    classify_all(X_multi_class_classification_scaled, labels_multi_class_classification)
+    output_figure(fig=pca_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+                             labels_multi_class_classification.unique(),
+                             ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+                              'C17', 'C18']), path=path, name="pca_2d_with_null", format="png")
+
+    output_figure(fig=pca_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+                             labels_multi_class_classification.unique()[0:14],
+                             ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+                              'C17', 'C18']), path=path, name="pca_2d_without_null", format="png")
+
+    output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+                             labels_multi_class_classification.unique(),
+                             ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+                              'C17', 'C18'], n_iter=1000, perplexity=30), path=path, name="sne_2d_with_null", format="png")
+
+    output_figure(fig=sne_2d(X_multi_class_classification_scaled, labels_multi_class_classification,
+                             labels_multi_class_classification.unique()[0:14],
+                             ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
+                              'C17', 'C18'], n_iter=1000, perplexity=30), path=path, name="sne_2d_without_null", format="png")
+
+    classify_all(X_multi_class_classification_scaled, labels_multi_class_classification, path, binary=False)
+
+def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size, feature_calculation_setting):
+    right_hand_only = False  # TODO rework
+    path = os.getcwd()
+    participants_folder = '-'.join(experiment_dirs_selected) + "/"
+    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}/".format(use_indoor, use_fingerprinting_approach,
+                                                                                feature_calculation_setting.__class__.__name__,
+                                                                                window_size)
+    path = path + "/output_experiments/binary/" + participants_folder + sub_folder
+    if not os.path.exists(path):
+        os.makedirs(path)
+    else: return
+    sys.stdout = open(path + "console.txt", 'w')
+
+    warnings.warn(participants_folder)
+    warnings.warn("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {} \n\n".format(
+            use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size))
+    print(participants_folder)
+    print("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {}".format(
+        use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size))
+
+    experiment_dirs = get_sub_directories(experiment_dir_path)
+    experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
+    # Read data
+    sample_rate = 50
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True,
+                                                     require_indoor=use_indoor, use_fingerprinting_approach=use_fingerprinting_approach)
+
+    # TODO test right hand only and change activities to only include both and right handed activities
+    if right_hand_only:
+        chunks = chunks["right"]
+        null_chunks = null_chunks["right"]
+    del experiment_dir_path
+    del experiment_dirs
+    print("Finished reading data")
+
+    # we only need the y vector for the multi class clf
+    # y.reset_index(inplace=True)
+    labels = y.loc[:, "label"].squeeze()
+
+    output_figure(fig=plot_duration_histogram(chunks["right"]), path=path, name="duration_histogram_activities",
+                  format="png")
+    output_figure(fig=plot_duration_histogram(null_chunks["right"]), path=path, name="duration_histogram_null",
+                  format="png")
+
+    # Preprocess data
+    if use_indoor:
+        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks)
+    else:
+        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks)
+
+    del chunks
+    del null_chunks
+    # Segmentation
+
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(
+        chunks_ocd,
+        chunks_null_class,
+        window_size)
+
+    assert len(labels_null_segmented) != 0
+
+    null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
+        [chunks_ocd_segmented, chunks_null_segmented],
+        [labels_ocd_segmented, labels_null_segmented])
+    assert len(set(labels_null_classification)) == 2
+
+    X_null_class_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor,
+                                                              feature_set_config=feature_calculation_setting, use_fingerprinting_approach=use_fingerprinting_approach)
+
+    impute(X_null_class_classification)
+    X_null_classification_selected = select_features(X_null_class_classification, labels_null_classification)
+
+    scaler = StandardScaler()
+    X_null_classification = scaler.fit_transform(X_null_classification_selected)
+
+    classify_all(X_null_classification, labels_null_classification, path, binary=True)
+
+    #labels_null_classification.reset_index(drop=True)
+
+    # add the old labels to the column names of the features again
+    #X_null_classification_selected = pd.DataFrame(X_null_classification, columns=X_null_classification_selected.columns)
+
+    # reduce the amount of selected features and append the labels as an extra column
+    #X_y = pd.concat([X_null_classification_selected.iloc[:, :5], labels_null_classification.reset_index(drop=True)],
+    #                axis=1)
+
+    #label_vals = {11: "null class", 12: "OCD activity"}
+    # rename the last column
+    #cols = [c for c in X_y.columns]
+    #cols[-1] = "class"
+    #X_y.columns = cols
+    #X_y.replace({"class": label_vals}, inplace=True)
+
+    #output_figure(fig=swarm_plot_top_features(pd.DataFrame(X_y).reset_index()), path=path, name="swarm_plot_top_features", format="png")
 
 
-    # TODO: store in file
+def run_experiments(config_file='./config_files/experiments_config.json'):
+    import json
+    with open(config_file) as f:
+        config = json.load(f)
+    classification_types = config["classification_types"]
+    experiment_dir_paths = config["experiment_dir_paths"]
+    experiment_dirs_selected = config["experiment_dirs_selected"]
+    use_indoor = config["use_indoor"]
+    use_fingerprinting_approach = config["use_fingerprinting_approach"]
+    feature_calculation_settings = config["feature_calculation_settings"]
+    window_sizes = config["window_sizes"]
+    null_class_included = config["null_class_included"]
+    right_hand_only = config["right_hand_only"]
+    if True in use_indoor:
+        total_number_of_experiments_without_exclude = len(classification_types)*len(experiment_dir_paths)*len(experiment_dirs_selected)*(len(use_indoor)+len(use_fingerprinting_approach)-1)*len(feature_calculation_settings)*len(window_sizes)*len(null_class_included)
+    else:
+        total_number_of_experiments_without_exclude = len(classification_types)*len(experiment_dir_paths)*len(experiment_dirs_selected)*len(use_indoor)*len(feature_calculation_settings)*len(window_sizes)*len(null_class_included)
+    number_of_current_experiment = 1
+    exclude = config["exclude"]
+    excluded_configuration = False
+
+    for type in classification_types:
+        for path in experiment_dir_paths:
+            for experiment_dir in experiment_dirs_selected:
+                for indoor in use_indoor:
+                    for fingerprinting in use_fingerprinting_approach:
+                        if (not use_indoor) and fingerprinting: continue
+                        for setting in feature_calculation_settings:
+                            for size in window_sizes:
+                                for included in null_class_included:
+                                    if type=="binary" and (not included): continue
+                                    for right_hand in right_hand_only:
+                                        for i in range(len(exclude)):
+                                            if  not excluded_configuration and \
+                                                type in exclude[i]["classification_types"] and \
+                                                path in exclude[i]["experiment_dir_paths"] and \
+                                                experiment_dir in exclude[i]["experiment_dirs_selected"] and \
+                                                indoor in exclude[i]["use_indoor"] and \
+                                                fingerprinting in exclude[i]["use_fingerprinting_approach"] and \
+                                                setting in exclude[i]["feature_calculation_settings"] and \
+                                                size in exclude[i]["window_sizes"] and \
+                                                included in exclude[i]["null_class_included"] and \
+                                                right_hand in exclude[i]["right_hand_only"]:
+                                                    excluded_configuration = True
+                                        if not excluded_configuration:
+                                            minimal = MinimalFCParameters()
+                                            del minimal['length']
+                                            efficient = EfficientFCParameters()
+                                            del efficient['length']
+                                            comprehensive = ComprehensiveFCParameters()
+                                            del comprehensive['length']
+                                            if setting == "minimal": setting = minimal
+                                            if setting == "efficient": setting = efficient
+                                            if setting == "comprehensive": setting = comprehensive
+                                            warnings.warn("Execute experiment number: " + str(number_of_current_experiment) + "/" + str(total_number_of_experiments_without_exclude))
+                                            if type == "multi":
+                                                run_multiclass_classification(experiment_dir_path=path,
+                                                                          experiment_dirs_selected=experiment_dir,
+                                                                          use_indoor=indoor,
+                                                                          use_fingerprinting_approach=fingerprinting,
+                                                                          feature_calculation_setting=setting,
+                                                                          window_size=size,
+                                                                          null_class_included=included,
+                                                                          right_hand_only = right_hand)
+                                                matplotlib.pyplot.close("all")
+                                            if type == "binary":
+                                                run_binary_classification(experiment_dir_path=path,
+                                                                          experiment_dirs_selected=experiment_dir,
+                                                                          use_indoor=indoor,
+                                                                          use_fingerprinting_approach=fingerprinting,
+                                                                          feature_calculation_setting=setting,
+                                                                          window_size=size)
+                                                matplotlib.pyplot.close("all")
+                                            number_of_current_experiment += 1
+                                        excluded_configuration = False
 
 def test_run_multiclass_recordings_clf():
-    experiment_dir_path = "../../data/phyphox/full recordings/"
-    # Ana-2, Ariane, Julian, Wiki
-    experiment_dirs_selected = ["Ana-2", "Ariane", "Julian", "Wiktoria"]
-
-    use_indoor = True
-    window_size = 50
-    # MinimalFCParameters, ComprehensiveFCParameters, EfficientFCParameters
-    feature_calculation_setting = MinimalFCParameters()
-
-
-    run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=use_indoor,
-                                  feature_calculation_setting=feature_calculation_setting,
-                                  window_size=window_size)
-
-experiment_dir_path = "../../data/phyphox/full recordings/"
-# Ana-2, Ariane, Julian, Wiki
-experiment_dirs_selected = ["Ana-2", "Ariane", "Julian", "Wiktoria"]
-feature_calculation_setting_min = MinimalFCParameters()
-feature_calculation_setting_efficient = EfficientFCParameters()
-
-# min, indoor, 50
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=True,
-                                  feature_calculation_setting=feature_calculation_setting_min,
-                                  window_size=50)
-
-# min, no indoor, 50
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=False,
-                                  feature_calculation_setting=feature_calculation_setting_min,
-                                  window_size=50)
-
-# min, indoor, 100
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=True,
-                                  feature_calculation_setting=feature_calculation_setting_min,
-                                  window_size=100)
-
-# min, no indoor, 100
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=False,
-                                  feature_calculation_setting=feature_calculation_setting_min,
-                                  window_size=100)
-
-# efficient, indoor, 50
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=True,
-                                  feature_calculation_setting=feature_calculation_setting_efficient,
-                                  window_size=50)
-
-# efficient, no indoor, 50
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=False,
-                                  feature_calculation_setting=feature_calculation_setting_efficient,
-                                  window_size=50)
-
-# efficient, indoor, 100
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=True,
-                                  feature_calculation_setting=feature_calculation_setting_efficient,
-                                  window_size=100)
-
-# efficient, no indoor, 100
-run_multiclass_classification(experiment_dir_path=experiment_dir_path,
-                                  experiment_dirs_selected=experiment_dirs_selected,
-                                  use_indoor=False,
-                                  feature_calculation_setting=feature_calculation_setting_efficient,
-                                  window_size=100)
+    run_experiments(config_file = '/tmp/pycharm_project_688/src/experiments/config_files/experiments_config.json')

@@ -1,16 +1,9 @@
-# Proximity
-
-# get readings as df
-# group by major minor
-# batch (0.5, 0.75, 1) -> mean, median (mean rounded in direction of median?)
-# filter -> Kalman (filtering before or after batching??)
 import math
 
 import numpy as np
 import pandas as pd
 
-import file_handling
-from src.indoor_positioning import get_file_as_data_frame, get_recording_as_data_frame, get_specific_indoor_recording
+from src.indoor_positioning import get_recording_as_data_frame, get_specific_indoor_recording
 
 
 def test_get_beacons_for_proximity_approach():
@@ -185,35 +178,3 @@ def test_duration():
     print(((end - start) / 1000) / 60)
     print(first - start)
     print(end - last)
-
-
-def test_visualize_recordings():
-    experiment_dir_path = "../../data/phyphox/full recordings/"
-    experiment_dirs = file_handling.get_sub_directories(experiment_dir_path)
-    for directory in experiment_dirs:
-        # if "duration" not in directory:
-        #    continue
-        try:
-            if "ariane" in directory.lower():
-                indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
-                indoor_data_frame = get_file_as_data_frame(indoor_file)
-                visualize_rssi_values(indoor_data_frame)
-        except IndexError:
-            # we don't have an indoor recording for this recording session
-            pass
-
-
-def test_visualize():
-    recording = get_specific_indoor_recording()
-    df = get_recording_as_data_frame(recording)
-    visualize_rssi_values(df)
-
-
-def visualize_rssi_values(df):
-    import matplotlib.pyplot
-    start_timestamp = df["timestamp"].get_values()[0]
-    indices = df["timestamp"] - start_timestamp
-    indices /= 1000
-    indices /= 60
-    matplotlib.pyplot.plot(indices, df["rssi"])
-    matplotlib.pyplot.show()

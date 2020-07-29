@@ -1,13 +1,16 @@
 import time
 
+import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, plot_roc_curve
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import matthews_corrcoef
 from sklearn.metrics import f1_score
 from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import fbeta_score
+from sklearn.model_selection import StratifiedKFold
+
 
 def evaluate(X_train, Y_train, X_test, Y_test, clf):
     start = time.clock()
@@ -53,7 +56,7 @@ def evaluate(X_train, Y_train, X_test, Y_test, clf):
     return fig, prediction
 
 
-def roc_curve_auc(X_train, X_test, Y_train, Y_test, clf):
+def roc_curve_auc(X_test, Y_test, clf):
     Y_score = clf.decision_function(X_test)
 
     fpr = dict()
@@ -77,4 +80,46 @@ def display_roc_curve_auc(fpr, tpr, roc_auc, cls=0):
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
     plt.show()
+    return fig
+
+def auc_roc_cv(X, y, model):
+    # Run classifier with cross-validation and plot ROC curves
+    cv = StratifiedKFold(n_splits=6)
+    classifier = model
+
+    tprs = []
+    aucs = []
+    mean_fpr = np.linspace(0, 1, 100)
+
+    fig, ax = plt.subplots()
+    for i, (train, test) in enumerate(cv.split(X, y)):
+        classifier.fit(X[train], y[train])
+        viz = plot_roc_curve(classifier, X[test], y[test],
+                             name='ROC fold {}'.format(i),
+                             alpha=0.3, lw=1, ax=ax)
+        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+        aucs.append(viz.roc_auc)
+
+    ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+            label='Chance', alpha=.8)
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+    std_auc = np.std(aucs)
+    ax.plot(mean_fpr, mean_tpr, color='b',
+            label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
+            lw=2, alpha=.8)
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+                    label=r'$\pm$ 1 std. dev.')
+
+    ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+           title="Receiver operating characteristic")
+    ax.legend(loc="lower right")
     return fig

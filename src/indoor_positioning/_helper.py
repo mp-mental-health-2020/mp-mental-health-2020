@@ -4,8 +4,7 @@ import warnings
 
 import pandas as pd
 
-from src import file_handling
-from src.file_handling import get_project_directory, get_sub_directories
+from src.file_handling import get_file_names_in_directory_for_pattern, get_project_directory, get_sub_directories, read_json_file
 
 # Example json:
 # {
@@ -46,21 +45,21 @@ def filter_files(file_names):
 
 
 def get_random_indoor_recording():
-    file_names = file_handling.get_file_names_in_directory_for_pattern(get_indoor_data_directory(), "*.json")
+    file_names = get_file_names_in_directory_for_pattern(get_indoor_data_directory(), "*.json")
     random_file = random.sample(file_names, 1)[0]
-    return file_handling.read_json_file(random_file)
+    return read_json_file(random_file)
 
 
 def get_specific_indoor_recording():
-    file_names = file_handling.get_file_names_in_directory_for_pattern(get_indoor_data_directory(), "*.json")
+    file_names = get_file_names_in_directory_for_pattern(get_indoor_data_directory(), "*.json")
     for file_name in file_names:
         if "_-2_" in file_name:
             random_file = file_name
-    return file_handling.read_json_file(random_file)
+    return read_json_file(random_file)
 
 
 def get_file_as_data_frame(file_path):
-    recording = file_handling.read_json_file(file_path)
+    recording = read_json_file(file_path)
     packets = recording["advertisingPacketList"]
     return pd.DataFrame(packets, columns=COLUMNS)
 
@@ -106,10 +105,10 @@ def test_get_offset_for_indoor():
     experiment_dirs = get_sub_directories("../../data/phyphox/full recordings/")
     for directory in experiment_dirs:
         if any([user in directory for user in ["Hung", "Julian", "Ana-2", "Wiktoria", "Ariane"]]):
-            files = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")
+            files = get_file_names_in_directory_for_pattern(directory, "*.json")
             if not files:
                 continue
             print(directory)
-            indoor_file = file_handling.get_file_names_in_directory_for_pattern(directory, "*.json")[0]
+            indoor_file = get_file_names_in_directory_for_pattern(directory, "*.json")[0]
             indoor_data_frame = get_file_as_data_frame(indoor_file)
             visualize_beacon_data_to_find_offset(indoor_data_frame, directory=directory)
