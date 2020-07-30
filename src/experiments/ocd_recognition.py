@@ -1,10 +1,13 @@
 # this file is supposed to summarize our results with respect to OCD recognition
+from tsfresh import select_features
 from tsfresh.feature_extraction import MinimalFCParameters
+from tsfresh.utilities.dataframe_functions import impute
 
 from data_reading.phyphox import read_experiments_in_dir
+from features import extract_timeseries_features
 from file_handling import get_sub_directories
 from preprocessing import preprocess_chunks_for_multiclass_test_one_handed, \
-    segment_for_null_classification
+    segment_for_null_classification, segment_windows, concat_chunks_for_feature_extraction
 
 sample_rate = 50
 
@@ -36,8 +39,18 @@ chunks_ocd_segmented, labels_ocd_segmented_multiclass, chunks_null_segmented, la
 
 assert len(set(labels)) == len(set(labels_ocd_segmented_multiclass))
 
-
 # null class detector = ...
+
+# multiclass clf without null
+multi_class_df, labels_multi_class_classification = concat_chunks_for_feature_extraction(
+        [chunks_ocd_segmented],
+        [labels_ocd_segmented_multiclass])
+
+X_multi_class_classification = extract_timeseries_features(multi_class_df, use_indoor=True, use_fingerprinting_approach=True, feature_set_config=feature_calculation_setting)
+impute(X_multi_class_classification)
+X_multi_class_classification_selected = select_features(X_multi_class_classification, labels_multi_class_classification)
+
+
 # classifier = train multiclass clf
 # test_data = pd.read_csv(...)
 # test_segmented = segment_windows(...)
