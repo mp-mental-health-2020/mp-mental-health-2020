@@ -96,23 +96,23 @@ def preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks):
     assert len(chunks["right"]) != 0
     assert len(null_chunks["right"]) != 0
 
-    chunks_ocd = []
+    chunks_ocd_merged = []
     chunks_length = len(chunks["right"])
     null_chunks_length = len(null_chunks["right"])
     # append action id and merge left and right chunk
     for right_chunk, left_chunk, indoor_chunk, action_id in zip(chunks["right"], chunks["left"], chunks["indoor"], range(chunks_length)):
-        chunks_ocd.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
+        chunks_ocd_merged.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
 
-    chunks_null_class = []
+    chunks_null_class_merged = []
 
-    null_action_ids = range(len(chunks_ocd), len(chunks_ocd) + null_chunks_length)
+    null_action_ids = range(len(chunks_ocd_merged), len(chunks_ocd_merged) + null_chunks_length)
     assert set(range(chunks_length)).isdisjoint(null_action_ids)
 
     for right_chunk, left_chunk, indoor_chunk, action_id in zip(null_chunks["right"], null_chunks["left"], null_chunks["indoor"], null_action_ids):
         if len(left_chunk):
-            chunks_null_class.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
-
-    return chunks_ocd, chunks_null_class
+            chunks_null_class_merged.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
+    assert len(chunks_null_class_merged) == len(null_chunks)
+    return chunks_ocd_merged, chunks_null_class_merged
 
 
 def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
