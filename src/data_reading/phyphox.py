@@ -110,7 +110,7 @@ def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=Tr
     return data_frames
 
 
-def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True, use_fingerprinting_approach=True):
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True, use_fingerprinting_approach=True, selected_activities=None):
     """
 
     Parameters
@@ -123,17 +123,20 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
         If True, linear acceleration is not used for this run.
     require_indoor : boolean, default=True
         If True, it requires the recording directories to contain indoor positioning recordings.
-
+    use_fingerprinting_approach: boolean, default=True
+        Gets passed on to the method that handles the indoor dataframe
+    selected_activities: list, default=None
+        If a list of selected activities is passed then only these activities will be added to the ocd chunks. Every action of another activity will be added to the null chunks.
     Returns
     -------
         chunks : dict
             Contains keys for the data used:
                 'left' and 'right' for the sensor data of the respective hands
                 'indoor' for the beacon advertising data
-            Each value contains a lists of data frames for the respective times when activities where performed in the recording. Each list entry
-            is one activity.
+            Each value contains a list of data frames for the respective times when actions where performed in the recording. Each list entry
+            is one action.
         null_chucks : dict
-            Same as 'chunks' but with the data for when no activity was performed.
+            Same as 'chunks' but with the data for when an activity was performed that we don't want to detect.
         y : pd.DataFrame
             DataFrame containing the labels for the activities performed and their respective hands.
     """
@@ -178,20 +181,32 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
         # combine labels
         y_current = pd.concat([y_actions, y_hands], axis=1)
         y_current.columns = y_columns
-
-        y = y.append(y_current)
+        # make sure the labels always have the same name
+        y_current["label"] = y_current["label"].str.replace("  ", " ").str.strip()
 
         # iterate over the annotations and split the timeseries in chunks
-        for key, df in data_frames.items():
-            if key in chunks:
-                chunks[key] += [df.iloc[int(annotation["start"] * sample_rate):int(annotation["end"] * sample_rate)] for i, annotation in
-                                y_current.iterrows()]
-                # null chunks are everything in between annotations
-                null_chunks[key] += [df.iloc[int(annotation["end"] * sample_rate):int(y_current.iloc[i + 1:i + 2]["start"] * sample_rate)] for
-                                     i, annotation in y_current.iterrows() if i < len(y_current) - 1]
+        for i, annotation in y_current.iterrows():
+            current_action_label = annotation["label"]
+            is_selected_activity = not selected_activities or (selected_activities and current_action_label in selected_activities)
+            if is_selected_activity:
+                # only append the label once, not for every "hand"
+                y = y.append(annotation)
+            for key, df in data_frames.items():
+                if key in chunks:
+                    current_df = df.iloc[int(annotation["start"] * sample_rate):int(annotation["end"] * sample_rate)]
+                    # we need to determine if we put the current_df into the list of ocd chunks or null chunks
+                    if is_selected_activity:
+                        chunks[key].append(current_df)
+                    else:
+                        null_chunks[key].append(current_df)
+
+                    if i < len(y_current) - 1:
+                        # null chunks are everything in between annotations
+                        null_chunks[key].append(df.iloc[int(annotation["end"] * sample_rate):int(y_current.iloc[i + 1:i + 2]["start"] * sample_rate)])
 
     # clear all the labels with multiple consecutive white spaces
-    y["label"] = y["label"].str.replace("  ", " ").str.strip()
+    assert len(chunks["right"]) == len(chunks["left"])
+    assert len(y) == len(chunks["right"])
     y.reset_index(inplace=True, drop=True)
     # we have to do this twice to access the index column using .loc
     y.reset_index(inplace=True)
