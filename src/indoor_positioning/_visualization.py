@@ -1,5 +1,33 @@
+import matplotlib.pyplot
+
 import file_handling
 from indoor_positioning import get_file_as_data_frame, get_recording_as_data_frame, get_specific_indoor_recording
+
+
+def visualize_beacon_data_to_find_offset(df, minor=9, directory=None):
+    import matplotlib.pyplot
+    # get data for specific beacon
+    start_timestamp = df["timestamp"].get_values()[0]
+    df = df[df["minor"] == minor]
+    df = df[df["rssi"] >= -55]
+    df["timestamp"] -= start_timestamp
+    df["timestamp"] /= 1000
+
+    if not df.empty:
+        indices = df["timestamp"]
+        # indices /= 1000
+        # indices /= 60
+        matplotlib.pyplot.plot(indices, df["rssi"])
+        # matplotlib.pyplot.show()
+
+
+def visualize_rssi_values(df):
+    start_timestamp = df["timestamp"].get_values()[0]
+    indices = df["timestamp"] - start_timestamp
+    indices /= 1000
+    indices /= 60
+    matplotlib.pyplot.plot(indices, df["rssi"])
+    matplotlib.pyplot.show()
 
 
 def test_visualize_recordings():
@@ -23,16 +51,6 @@ def test_visualize():
     recording = get_specific_indoor_recording()
     df = get_recording_as_data_frame(recording)
     visualize_rssi_values(df)
-
-
-def visualize_rssi_values(df):
-    import matplotlib.pyplot
-    start_timestamp = df["timestamp"].get_values()[0]
-    indices = df["timestamp"] - start_timestamp
-    indices /= 1000
-    indices /= 60
-    matplotlib.pyplot.plot(indices, df["rssi"])
-    matplotlib.pyplot.show()
 
 
 def test_print_duration():
