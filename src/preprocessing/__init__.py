@@ -1,6 +1,5 @@
 from src.preprocessing._chunk_preparation import (concat_chunks_for_feature_extraction, merge_chunks,
                                                   preprocess_chunks_for_null_test,
-                                                  preprocess_chunks_for_null_test_with_indoor,
                                                   preprocess_chunks_for_multiclass_test_one_handed)
 from src.preprocessing._data_frame import set_time_delta_as_index
 from src.preprocessing._filter import apply_moving_average_filter
@@ -18,6 +17,5 @@ __all__ = [
     "segment_for_null_classification",
     "preprocess_chunks_for_null_test",
     "concat_chunks_for_feature_extraction",
-    "preprocess_chunks_for_null_test_with_indoor",
     "preprocess_chunks_for_multiclass_test_one_handed"
 ]
