@@ -60,6 +60,42 @@ def pca_2d(X, y, targets, colors):
     return fig
 
 
+def pca_null_clf(X, X_null, n_components=2):
+    if not (2 <= n_components <=3):
+        print("n_components must be either 2 or 3")
+        return
+    from sklearn.decomposition import PCA
+
+    pca = PCA(n_components=n_components)
+    principalComponents = pca.fit_transform(X)
+    columns = ['principal component 1', 'principal component 2'] if n_components==2 else ['principal component 1', 'principal component 2', 'principal component 3']
+    principalDf = pd.DataFrame(data=principalComponents
+                               , columns=columns)
+    nullComponents = pca.transform(X_null)
+    nullDf = pd.DataFrame(data=nullComponents
+                               , columns=columns)
+    fig = plt.figure(figsize=(8, 8))
+    if n_components == 2:
+        ax = fig.add_subplot(1, 1, 1)
+    else:
+        # to plot this in jupyter interactively you need to add the following line to the notebook
+        # %matplotlib qt
+        from mpl_toolkits import mplot3d
+        ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('Principal Component 1', fontsize=15)
+    ax.set_ylabel('Principal Component 2', fontsize=15)
+    if n_components == 3:
+        ax.set_zlabel('Principal Component 3', fontsize=15)
+    ax.set_title('2 component PCA', fontsize=20)
+    if n_components == 2:
+        ax.scatter(principalDf['principal component 1'], principalDf['principal component 2'])
+        ax.scatter(nullDf['principal component 1'], nullDf['principal component 2'])
+    else:
+        ax.scatter(principalDf['principal component 1'], principalDf['principal component 2'], principalDf['principal component 3'])
+        ax.scatter(nullDf['principal component 1'], nullDf['principal component 2'], nullDf['principal component 3'])
+    plt.show()
+
+
 def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.decomposition import PCA
     pca = PCA(n_components=3)
