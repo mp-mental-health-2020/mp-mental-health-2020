@@ -98,13 +98,14 @@ def preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks):
 
     chunks_ocd = []
     chunks_length = len(chunks["right"])
+    null_chunks_length = len(null_chunks["right"])
     # append action id and merge left and right chunk
     for right_chunk, left_chunk, indoor_chunk, action_id in zip(chunks["right"], chunks["left"], chunks["indoor"], range(chunks_length)):
         chunks_ocd.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
 
     chunks_null_class = []
 
-    null_action_ids = range(len(chunks_ocd), len(chunks_ocd) + chunks_length)
+    null_action_ids = range(len(chunks_ocd), len(chunks_ocd) + null_chunks_length)
     assert set(range(chunks_length)).isdisjoint(null_action_ids)
 
     for right_chunk, left_chunk, indoor_chunk, action_id in zip(null_chunks["right"], null_chunks["left"], null_chunks["indoor"], null_action_ids):
@@ -171,7 +172,7 @@ def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
     # additionally we should have 2 chunks for every null chunk
     assert len(chunks_null_class_merged) == 2 * chunks_null_length + len(chunks_ocd_merged)
     # ensure that the ids of null chunks and ocd chunks are really disjoint
-    assert set([c.loc[:,"action_id"][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, "action_id"][0] for c in chunks_null_class_merged])
+    assert set([c.loc[:, "action_id"][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, "action_id"][0] for c in chunks_null_class_merged])
     return chunks_ocd_merged, chunks_null_class_merged, y_filtered
 
 
