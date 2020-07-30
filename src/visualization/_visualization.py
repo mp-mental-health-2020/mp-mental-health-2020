@@ -59,6 +59,27 @@ def pca_2d(X, y, targets, colors):
     ax.grid()
     return fig
 
+def pca_2d_null_clf(X, X_null):
+    from sklearn.decomposition import PCA
+    from mpl_toolkits import mplot3d
+    pca = PCA(n_components=3)
+    principalComponents = pca.fit_transform(X)
+    principalDf = pd.DataFrame(data=principalComponents
+                               , columns=['principal component 1', 'principal component 2', 'principal component 3'])
+    nullComponents = pca.transform(X_null)
+    nullDf = pd.DataFrame(data=nullComponents
+                               , columns=['principal component 1', 'principal component 2', 'principal component 3'])
+    fig = plt.figure(figsize=(8, 8))
+    #ax = fig.add_subplot(1, 1, 1)
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('Principal Component 1', fontsize=15)
+    ax.set_ylabel('Principal Component 2', fontsize=15)
+    ax.set_zlabel('Principal Component 3', fontsize=15)
+    ax.set_title('2 component PCA', fontsize=20)
+    ax.scatter(principalDf['principal component 1'], principalDf['principal component 2'], principalDf['principal component 3'])
+    ax.scatter(nullDf['principal component 1'], nullDf['principal component 2'], nullDf['principal component 3'])
+    plt.show()
+
 
 def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.decomposition import PCA
