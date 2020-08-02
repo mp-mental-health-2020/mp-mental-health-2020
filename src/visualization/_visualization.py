@@ -38,11 +38,11 @@ def swarm_plot_top_features(data):
 def pca_2d(X, y, targets, colors):
     from sklearn.decomposition import PCA
     pca = PCA(n_components=2)
-    principalComponents = pca.fit_transform(X)
-    principalDf = pd.DataFrame(data=principalComponents
+    principal_components = pca.fit_transform(X)
+    principal_df = pd.DataFrame(data=principal_components
                                , columns=['principal component 1', 'principal component 2'])
-    finalDf = pd.concat([principalDf, y.reset_index(drop=True)], axis=1)
-    finalDf.columns = ['principal component 1', 'principal component 2', 'target']
+    final_df = pd.concat([principal_df, y.reset_index(drop=True)], axis=1)
+    final_df.columns = ['principal component 1', 'principal component 2', 'target']
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(1, 1, 1)
@@ -51,23 +51,62 @@ def pca_2d(X, y, targets, colors):
     ax.set_title('2 component PCA', fontsize=20)
 
     for target, color in zip(targets, colors):
-        indicesToKeep = finalDf['target'] == target
-        ax.scatter(finalDf.loc[indicesToKeep, 'principal component 1']
-                   , finalDf.loc[indicesToKeep, 'principal component 2']
+        indices_to_keep = final_df['target'] == target
+        ax.scatter(final_df.loc[indices_to_keep, 'principal component 1']
+                   , final_df.loc[indices_to_keep, 'principal component 2']
                    , c=color)
     ax.legend(targets)
     ax.grid()
     return fig
 
 
+def pca_null_clf(X, X_null, n_components=2):
+    from sklearn.decomposition import PCA
+
+    pca = PCA(n_components=n_components)
+    principal_components_ocd = pca.fit_transform(X)
+    columns = ['principal component 1', 'principal component 2'] if n_components==2 else ['principal component 1', 'principal component 2', 'principal component 3']
+    principal_df_ocd = pd.DataFrame(data=principal_components_ocd
+                               , columns=columns)
+    principal_components_null = pca.transform(X_null)
+    principal_df_null = pd.DataFrame(data=principal_components_null
+                               , columns=columns)
+    if 2 <= n_components <= 3:
+        fig = plt.figure(figsize=(8, 8))
+        if n_components == 2:
+            ax = fig.add_subplot(1, 1, 1)
+        else:
+            # to plot this in jupyter interactively you need to add the following line to the notebook
+            # %matplotlib qt
+            from mpl_toolkits import mplot3d
+            ax = fig.add_subplot(111, projection='3d')
+        ax.set_xlabel('Principal Component 1', fontsize=15)
+        ax.set_ylabel('Principal Component 2', fontsize=15)
+        if n_components == 3:
+            ax.set_zlabel('Principal Component 3', fontsize=15)
+        ax.set_title('2 component PCA', fontsize=20)
+        if n_components == 2:
+            ax.scatter(principal_df_ocd['principal component 1'], principal_df_ocd['principal component 2'], color="b")
+            ax.scatter(principal_df_null['principal component 1'], principal_df_null['principal component 2'], color="r")
+        else:
+            ax.scatter(principal_df_ocd['principal component 1'], principal_df_ocd['principal component 2'], principal_df_ocd['principal component 3'], color="b")
+            ax.scatter(principal_df_null['principal component 1'], principal_df_null['principal component 2'], principal_df_null['principal component 3'], color="r")
+        plt.show()
+
+    print("PCA variance")
+    print(pca.explained_variance_ratio_)
+
+    return principal_components_ocd, principal_components_null
+
+
 def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     from sklearn.decomposition import PCA
     pca = PCA(n_components=3)
-    principalComponents = pca.fit_transform(X)
-    principalDf = pd.DataFrame(data=principalComponents
+    principal_components = pca.fit_transform(X)
+    principal_df = pd.DataFrame(data=principal_components
                                , columns=['principal component 1', 'principal component 2', 'principal component 3'])
-    finalDf = pd.concat([principalDf, y.reset_index(drop=True)], axis=1)
-    finalDf.columns = ['principal component 1', 'principal component 2', 'principal component 3', 'target']
+    final_df = pd.concat([principal_df, y.reset_index(drop=True)], axis=1)
+    final_df.columns = ['principal component 1', 'principal component 2', 'principal component 3', 'target']
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -77,10 +116,10 @@ def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     ax.set_title('3 component PCA', fontsize=20)
 
     for target, color in zip(targets, colors):
-        indicesToKeep = finalDf['target'] == target
-        ax.scatter(finalDf.loc[indicesToKeep, 'principal component 1']
-                   , finalDf.loc[indicesToKeep, 'principal component 2']
-                   , finalDf.loc[indicesToKeep, 'principal component 3']
+        indices_to_keep = final_df['target'] == target
+        ax.scatter(final_df.loc[indices_to_keep, 'principal component 1']
+                   , final_df.loc[indices_to_keep, 'principal component 2']
+                   , final_df.loc[indices_to_keep, 'principal component 3']
                    , c=color)
     ax.legend(targets)
     ax.grid()
@@ -92,8 +131,8 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
     sne_components = sne.fit_transform(X)
     sne_df = pd.DataFrame(data=sne_components
                           , columns=['principal component 1', 'principal component 2'])
-    sne_finalDf = pd.concat([sne_df, y.reset_index(drop=True)], axis=1)
-    sne_finalDf.columns = ['principal component 1', 'principal component 2', 'target']
+    sne_final_df = pd.concat([sne_df, y.reset_index(drop=True)], axis=1)
+    sne_final_df.columns = ['principal component 1', 'principal component 2', 'target']
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(1, 1, 1)
@@ -102,9 +141,9 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
     ax.set_title('2 component SNE', fontsize=20)
 
     for target, color in zip(targets, colors):
-        indicesToKeep = sne_finalDf['target'] == target
-        ax.scatter(sne_finalDf.loc[indicesToKeep, 'principal component 1']
-                   , sne_finalDf.loc[indicesToKeep, 'principal component 2']
+        indices_to_keep = sne_final_df['target'] == target
+        ax.scatter(sne_final_df.loc[indices_to_keep, 'principal component 1']
+                   , sne_final_df.loc[indices_to_keep, 'principal component 2']
                    , c=color)
     ax.legend(targets)
     ax.grid()
@@ -116,8 +155,8 @@ def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
     sne_components = sne.fit_transform(X)
     sne_df = pd.DataFrame(data=sne_components
                           , columns=['principal component 1', 'principal component 2', 'principal component 3'])
-    sne_finalDf = pd.concat([sne_df, y.reset_index(drop=True)], axis=1)
-    sne_finalDf.columns = ['principal component 1', 'principal component 2', 'principal component 3', 'target']
+    sne_final_df = pd.concat([sne_df, y.reset_index(drop=True)], axis=1)
+    sne_final_df.columns = ['principal component 1', 'principal component 2', 'principal component 3', 'target']
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -127,10 +166,10 @@ def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
     ax.set_title('3 component SNE', fontsize=20)
 
     for target, color in zip(targets, colors):
-        indicesToKeep = sne_finalDf['target'] == target
-        ax.scatter(sne_finalDf.loc[indicesToKeep, 'principal component 1']
-                   , sne_finalDf.loc[indicesToKeep, 'principal component 2']
-                   , sne_finalDf.loc[indicesToKeep, 'principal component 3']
+        indices_to_keep = sne_final_df['target'] == target
+        ax.scatter(sne_final_df.loc[indices_to_keep, 'principal component 1']
+                   , sne_final_df.loc[indices_to_keep, 'principal component 2']
+                   , sne_final_df.loc[indices_to_keep, 'principal component 3']
                    , c=color)
     ax.legend(targets)
     ax.grid()

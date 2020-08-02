@@ -1,0 +1,1 @@
+left hand had missing some data. No idea where or why. the recording apparently went Ok

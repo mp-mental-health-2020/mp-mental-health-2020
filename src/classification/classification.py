@@ -6,21 +6,19 @@ import seaborn as sn
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.model_selection import cross_val_predict, cross_val_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from xgboost import XGBClassifier;
+from xgboost import XGBClassifier
 from evaluation._evaluation import auc_roc_cv
 from output.output import output_figure
 
 models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()), \
           ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), \
-          ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42, n_jobs=4)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42,  n_jobs=4))]
-
-#('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42)),
+          ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))]
 
 X_g = None
 y_g = None
@@ -39,6 +37,7 @@ def classify_all(X, y, path, binary):
     with Pool(9) as p:
         p.map(classify_process, models)
 
+
 def classify_process(models):
     name = models[0]
     model = models[1]
@@ -50,6 +49,7 @@ def classify_process(models):
         # confusion matrix
 
         y_pred = cross_val_predict(model, X_g, y_g, cv=8)
+        print("F1 score: {:1.2f}".format(f1_score(y_g, y_pred)))
 
         labels_set = sorted(list(set(y_g)))
         conf_mat = confusion_matrix(y_g, y_pred)
@@ -61,8 +61,9 @@ def classify_process(models):
         fig = plt.figure(figsize=(10, 7))
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
-        output_figure(fig=fig, path=path_g, name=("confusion_matrix_"+name), format="png")
-        if binary_g:
-            output_figure(fig=auc_roc_cv(X = X_g, y = y_g, model = model), path=path_g, name=("auc_roc_"+name), format="png")
+        if path_g:
+            output_figure(fig=fig, path=path_g, name=("confusion_matrix_"+name), format="png")
+            if binary_g:
+                output_figure(fig=auc_roc_cv(X = X_g, y = y_g, model = model), path=path_g, name=("auc_roc_"+name), format="png")
 
 
