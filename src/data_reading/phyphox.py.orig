@@ -108,7 +108,11 @@ def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=Tr
     return data_frames
 
 
-def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True, selected_activities=None):
+<<<<<<< HEAD
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True, use_fingerprinting_approach=True, selected_activities=None):
+=======
+def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=True):
+>>>>>>> feature/supervised_classification
     """
 
     Parameters
@@ -121,6 +125,8 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
         If True, linear acceleration is not used for this run.
     require_indoor : boolean, default=True
         If True, it requires the recording directories to contain indoor positioning recordings.
+    use_fingerprinting_approach: boolean, default=True
+        Gets passed on to the method that handles the indoor dataframe
     selected_activities: list, default=None
         If a list of selected activities is passed then only these activities will be added to the ocd chunks. Every action of another activity will be added to the null chunks.
     Returns

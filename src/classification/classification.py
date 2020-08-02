@@ -6,13 +6,13 @@ import seaborn as sn
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.model_selection import cross_val_predict, cross_val_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from xgboost import XGBClassifier;
+from xgboost import XGBClassifier
 from evaluation._evaluation import auc_roc_cv
 from output.output import output_figure
 
@@ -49,6 +49,7 @@ def classify_process(models):
         # confusion matrix
 
         y_pred = cross_val_predict(model, X_g, y_g, cv=8)
+        print("F1 score: {:1.2f}".format(f1_score(y_g, y_pred)))
 
         labels_set = sorted(list(set(y_g)))
         conf_mat = confusion_matrix(y_g, y_pred)
