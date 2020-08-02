@@ -12,9 +12,9 @@ from classification.classification import classify_all
 from data_reading.phyphox import read_experiments_in_dir
 from features import extract_timeseries_features
 from file_handling import get_sub_directories
+from preprocessing import concat_chunks_for_feature_extraction, \
+    preprocess_chunks_for_null_test, \
 from output.output import output_figure
-from preprocessing import concat_chunks_for_feature_extraction, preprocess_chunks_for_null_test, \
-    preprocess_chunks_for_null_test_with_indoor, \
     segment_for_null_classification, segment_windows
 from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
@@ -84,10 +84,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     output_figure(fig=plot_duration_histogram(null_chunks["right"]), path=path, name="duration_histogram_null", format="png")
 
     # Preprocess data
-    if use_indoor:
-        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks)
-    else:
-        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks)
+    chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks, use_indoor)
 
     del chunks
     del null_chunks
@@ -222,10 +219,7 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
                   format="png")
 
     # Preprocess data
-    if use_indoor:
-        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks)
-    else:
-        chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks)
+    chunks_ocd, chunks_null_class = preprocess_chunks_for_null_test(chunks, null_chunks, use_indoor)
 
     del chunks
     del null_chunks
