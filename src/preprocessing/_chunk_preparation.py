@@ -43,11 +43,20 @@ def merge_chunks(chunk_left, chunk_right, action_id, chunk_indoor=None):
 
     c_all.set_index('index', inplace=True)
     c_all[ACTION_ID_COL] = action_id
-    # TODO: test that the timestamp is the index again
+
+    if chunk_indoor is not None:
+        # check that the minor ids are in the columns
+        assert 2 in c_all.columns
+        assert 3 in c_all.columns
+    else:
+        assert 2 not in c_all.columns
+        assert 3 not in c_all.columns
+    # make sure the action ids are set properly
+    assert c_all[ACTION_ID_COL][0] == action_id
     return c_all
 
 
-def preprocess_chunks_for_null_test(chunks, null_chunks):
+def preprocess_chunks_for_null_test(chunks, null_chunks, use_indoor=True):
     """
     For the binary null classification append action id and merge the left and right chunk
     Parameters
@@ -64,58 +73,29 @@ def preprocess_chunks_for_null_test(chunks, null_chunks):
 
     chunks_ocd = []
     chunks_length = len(chunks["right"])
+    null_chunks_length = len(null_chunks["right"])
     # append action id and merge left and right chunk
+
     for c_r, c_l, action_id in zip(chunks["right"], chunks["left"], range(chunks_length)):
-        chunks_ocd.append(merge_chunks(c_l, c_r, action_id))
+        indoor_chunk = chunks["indoor"][action_id] if use_indoor else None
+        chunks_ocd.append(merge_chunks(c_l, c_r, action_id, chunk_indoor=indoor_chunk))
 
     chunks_null_class = []
 
-    null_action_ids = range(len(chunks_ocd), len(chunks_ocd) + chunks_length)
-    assert set(range(chunks_length)).isdisjoint(null_action_ids)
-
-    for c_r, c_l, action_id in zip(null_chunks["right"], null_chunks["left"], null_action_ids):
+    for c_r, c_l, i in zip(null_chunks["right"], null_chunks["left"], range(null_chunks_length)):
+        # check if there is a null chunk between the two actions (sometimes two actions follow immediately after each other)
         if len(c_l):
-            c_both = merge_chunks(c_l, c_r, action_id)
-            chunks_null_class.append(c_both)
+            indoor_chunk = null_chunks["indoor"][i] if use_indoor else None
+            # make sure that the action_id for null_chunks is disjoint to the ids from the ocd chunks
+            action_id = i + chunks_length
+            chunks_null_class.append(merge_chunks(c_l, c_r, action_id, chunk_indoor=indoor_chunk))
+
+    # make sure all the action ids are disjoint
+    assert set(range(chunks_length)).isdisjoint(set([c.loc[:,ACTION_ID_COL][0] for c in chunks_null_class]))
 
     return chunks_ocd, chunks_null_class
 
-
-def preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks):
-    """
-    For the binary null classification append action id and merge the left and right chunk
-    Parameters
-    ----------
-    chunks
-    null_chunks
-
-    Returns preprocessed chunks for ocd and null class
-    -------
-
-    """
-    assert len(chunks["right"]) != 0
-    assert len(null_chunks["right"]) != 0
-
-    chunks_ocd_merged = []
-    chunks_length = len(chunks["right"])
-    null_chunks_length = len(null_chunks["right"])
-    # append action id and merge left and right chunk
-    for right_chunk, left_chunk, indoor_chunk, action_id in zip(chunks["right"], chunks["left"], chunks["indoor"], range(chunks_length)):
-        chunks_ocd_merged.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
-
-    chunks_null_class_merged = []
-
-    null_action_ids = range(len(chunks_ocd_merged), len(chunks_ocd_merged) + null_chunks_length)
-    assert set(range(chunks_length)).isdisjoint(null_action_ids)
-
-    for right_chunk, left_chunk, indoor_chunk, action_id in zip(null_chunks["right"], null_chunks["left"], null_chunks["indoor"], null_action_ids):
-        if len(left_chunk):
-            chunks_null_class_merged.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
-    assert len(chunks_null_class_merged) == len(null_chunks["right"])
-    return chunks_ocd_merged, chunks_null_class_merged
-
-
-def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
+def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y, use_indoor=True):
     """
     Only use the active hand of an action for the chunks of the activities. The passive hand is added to the null chunks.
     Parameters
@@ -137,12 +117,15 @@ def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
     chunks_length = len(chunks["right"])
     chunks_null_length = len(null_chunks["right"])
     y = y.reset_index()
-    # not all actions will be in the new array of chunks (chunks of both hands are ignored). Hence also we need to filter the labels
+    # not all actions will be in the new array of chunks (chunks of both hands are ignored). Hence we also need to filter the labels.
     y_filtered = pd.DataFrame(columns=y.columns)
 
-    # append action id and merge the data of the active active hand with the indoor chunk
-    # TODO: check if indoor is available
-    for right_chunk, left_chunk, indoor_chunk, (_, cl) in zip(chunks["right"], chunks["left"], chunks["indoor"], y.iterrows()):
+    assert chunks_length == len(y)
+
+    # add the active hand chunk to the ocd chunks and the passive hand to the null chunks
+    # activities with both hands (like washing hands) are ignored at this point
+    for right_chunk, left_chunk, (i, cl) in zip(chunks["right"], chunks["left"], y.iterrows()):
+        indoor_chunk = chunks["indoor"][i] if use_indoor else None # merge_chunks will just merge the action id into the chunk if there is no indoor chunk
         action_id = cl["index"]
         hand = cl["hand"]
         if hand == "both":
@@ -159,20 +142,20 @@ def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y):
     assert len(y_filtered) == len(chunks_ocd_merged)
     assert list(y_filtered.columns) == list(y.columns)
 
-    # the highest possible action id that a null sample from the passive hand can have is 2 * chunks_length - 1
-    null_action_ids = range(2 * chunks_length, 2 * chunks_length + chunks_null_length)
-
-    for right_chunk, left_chunk, indoor_chunk, action_id in zip(null_chunks["right"], null_chunks["left"], null_chunks["indoor"], null_action_ids):
+    # add one chunk each for left and right hand to the null chunks
+    for right_chunk, left_chunk, i in zip(null_chunks["right"], null_chunks["left"], range(chunks_null_length)):
+        indoor_chunk = null_chunks["indoor"][i]
+        action_id = i + 2 * chunks_length # from the first loop we generated max 2 * chunks_length action_ids
         if len(left_chunk):
             chunks_null_class_merged.append(merge_chunks(left_chunk, None, action_id, indoor_chunk))
             # again make sure that we don't accidentally get overlapping action ids
-            chunks_null_class_merged.append(merge_chunks(right_chunk, None, action_id + len(null_chunks["right"]), indoor_chunk))
+            chunks_null_class_merged.append(merge_chunks(right_chunk, None, action_id + chunks_null_length, indoor_chunk))
 
     # for each ocd chunk we should have a null chunk
     # additionally we should have 2 chunks for every null chunk
     assert len(chunks_null_class_merged) == 2 * chunks_null_length + len(chunks_ocd_merged)
     # ensure that the ids of null chunks and ocd chunks are really disjoint
-    assert set([c.loc[:, "action_id"][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, "action_id"][0] for c in chunks_null_class_merged])
+    assert set([c.loc[:,ACTION_ID_COL][0] for c in chunks_ocd_merged]).isdisjoint([c.loc[:, ACTION_ID_COL][0] for c in chunks_null_class_merged])
     return chunks_ocd_merged, chunks_null_class_merged, y_filtered
 
 
