@@ -95,7 +95,6 @@ def preprocess_chunks_for_null_test(chunks, null_chunks, use_indoor=True):
 
     return chunks_ocd, chunks_null_class
 
-
 def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y, use_indoor=True):
     """
     Only use the active hand of an action for the chunks of the activities. The passive hand is added to the null chunks.
