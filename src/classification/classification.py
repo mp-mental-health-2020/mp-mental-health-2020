@@ -20,6 +20,7 @@ models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_c
           ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), \
           ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))]
 
+# , ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))
 X_g = None
 y_g = None
 path_g = None
@@ -45,15 +46,14 @@ def classify_process(models):
         scores = cross_val_score(model, X_g, y_g, cv=8)
         print('{}: {:1.2f} +/- {:1.2f}'.format(name, scores.mean(), scores.std()))
 
-        #if label_ids:
         # confusion matrix
-
         y_pred = cross_val_predict(model, X_g, y_g, cv=8)
-        print("F1 score: {:1.2f}".format(f1_score(y_g, y_pred)))
+        if binary_g:
+            print("F1 score for OCD class {} {:1.2f}".format(name, f1_score(y_g, y_pred, pos_label="OCD")))
+            print("F1 score for NULL class {} {:1.2f}".format(name, f1_score(y_g, y_pred, pos_label="NULL")))
 
         labels_set = sorted(list(set(y_g)))
         conf_mat = confusion_matrix(y_g, y_pred)
-        # print(conf_mat)
         df_cm = pd.DataFrame(conf_mat, index=labels_set,
                              columns=labels_set)
         df_cm["sum"] = df_cm.sum(axis=1)
@@ -61,9 +61,7 @@ def classify_process(models):
         fig = plt.figure(figsize=(10, 7))
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
-        if path_g:
+        if path_g is not None:
             output_figure(fig=fig, path=path_g, name=("confusion_matrix_"+name), format="png")
             if binary_g:
                 output_figure(fig=auc_roc_cv(X = X_g, y = y_g, model = model), path=path_g, name=("auc_roc_"+name), format="png")
-
-
