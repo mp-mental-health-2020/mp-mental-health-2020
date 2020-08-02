@@ -199,7 +199,7 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     # Read data
     sample_rate = 50
     chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True,
-                                                     require_indoor=use_indoor, use_fingerprinting_approach=use_fingerprinting_approach)
+                                                     require_indoor=use_indoor)
 
     # TODO test right hand only and change activities to only include both and right handed activities
     if right_hand_only:
