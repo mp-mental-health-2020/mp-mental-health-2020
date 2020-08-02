@@ -111,7 +111,7 @@ def preprocess_chunks_for_null_test_with_indoor(chunks, null_chunks):
     for right_chunk, left_chunk, indoor_chunk, action_id in zip(null_chunks["right"], null_chunks["left"], null_chunks["indoor"], null_action_ids):
         if len(left_chunk):
             chunks_null_class_merged.append(merge_chunks(left_chunk, right_chunk, action_id, chunk_indoor=indoor_chunk))
-    assert len(chunks_null_class_merged) == len(null_chunks)
+    assert len(chunks_null_class_merged) == len(null_chunks["right"])
     return chunks_ocd_merged, chunks_null_class_merged
 
 
