@@ -49,8 +49,9 @@ def classify_process(models):
         # confusion matrix
         y_pred = cross_val_predict(model, X_g, y_g, cv=8)
         if binary_g:
-            print("F1 score for OCD class {} {:1.2f}".format(name, f1_score(y_g, y_pred, pos_label="OCD")))
-            print("F1 score for NULL class {} {:1.2f}".format(name, f1_score(y_g, y_pred, pos_label="NULL")))
+            label_names = set(y_g)
+            for l in label_names:
+                print("{}: F1 score for class {}: {:1.2f}".format(name, l, f1_score(y_g, y_pred, pos_label=l)))
 
         labels_set = sorted(list(set(y_g)))
         conf_mat = confusion_matrix(y_g, y_pred)
