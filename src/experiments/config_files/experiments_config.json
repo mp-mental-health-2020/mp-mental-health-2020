@@ -1,13 +1,13 @@
 {
 	"classification_types": ["binary"],
 	"experiment_dir_paths": ["./data/phyphox/full recordings/"],
-	"experiment_dirs_selected": [["Ana-2", "Ariane", "Julian", "Wiktoria"]],
-	"activities": [],
+	"experiment_dirs_selected": [["Ana-2", "Anne", "Ariane", "Cilly", "Fabi", "Julian", "Julius", "Wiktoria"]],
+	"activities": [["pulling door", "pushing door"]],
 	"use_indoor": [false, true],
 	"use_fingerprinting_approach": [false, true],
 	"feature_calculation_settings": ["minimal"],
-	"window_sizes": [100],
-	"null_class_included": [true, false],
+	"window_sizes": [50,100,200],
+	"null_class_included": [true],
 	"right_hand_only": [false],
 	"exclude":
 		[]
