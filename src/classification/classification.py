@@ -1,6 +1,7 @@
 from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sn
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -17,14 +18,15 @@ from evaluation._evaluation import auc_roc_cv
 from output.output import output_figure
 
 models = [('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')), ('LDA', LinearDiscriminantAnalysis()), \
-          ('LinearSVC', LinearSVC()), ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), \
-          ('NB', GaussianNB()), ('SVC', SVC()), ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))]
+          ('CART', DecisionTreeClassifier()), ('Random Forest', RandomForestClassifier(n_estimators=100)), \
+          ('NB', GaussianNB())]
 
 # , ('XGBoost binary', XGBClassifier(objective="binary:logistic", random_state=42)), ('XGBoost mult', XGBClassifier(objective="multi:softprob", random_state=42))
 X_g = None
 y_g = None
 path_g = None
 binary_g = None
+
 
 def classify_all(X, y, path, binary):
     global X_g
@@ -66,3 +68,38 @@ def classify_process(models):
             output_figure(fig=fig, path=path_g, name=("confusion_matrix_"+name), format="png")
             if binary_g:
                 output_figure(fig=auc_roc_cv(X = X_g, y = y_g, model = model), path=path_g, name=("auc_roc_"+name), format="png")
+
+
+def train_and_select_best_model(X, y):
+    """
+    For binary classification: Trains all models and picks the one with the highest average between the 2 f scores
+    Parameters
+    ----------
+    X
+    y
+
+    Returns
+    -------
+
+    """
+    best_score = 0
+    best_model = None
+    best_model_name = ""
+    print("Training model")
+    for name,model in models:
+        y_pred = cross_val_predict(model, X, y, cv=8)
+        label_names = set(y)
+        f_score = np.mean([f1_score(y, y_pred, pos_label=l) for l in label_names])
+        if f_score > best_score:
+            best_score = f_score
+            best_model = model
+            best_model_name = name
+
+    print("Best scoring model {} has average f score of {:1.2f}".format(best_model_name, best_score))
+    best_model.fit(X, y)
+    return best_model
+
+
+def predict(X, model):
+    predictions = model.predict(X)
+    return predictions
