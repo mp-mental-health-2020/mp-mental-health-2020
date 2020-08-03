@@ -17,8 +17,9 @@ def extract_timeseries_features(timeseries, use_indoor, use_fingerprinting_appro
         if not use_fingerprinting_approach:
             # use only strongest beacon -> base for maybe using labels later on
             indoor_features = pd.DataFrame(indoor_features.idxmax(axis=1), columns=["minor"])
-
         timeseries = timeseries.drop(["action_id", "segment_id"] + BEACON_MINORS, axis=1)
+    else:
+        timeseries = timeseries.drop(["action_id", "segment_id"], axis=1)
     features = extract_features(timeseries, column_id='combined_id', default_fc_parameters=feature_set_config)
 
     if use_indoor:

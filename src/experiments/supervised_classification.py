@@ -46,8 +46,8 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     path = path + "/output_experiments/multi/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
-    else:
-        return
+    #else:
+    #    return
     sys.stdout = open(path + "console.txt", 'w')
 
     warnings.warn(participants_folder)

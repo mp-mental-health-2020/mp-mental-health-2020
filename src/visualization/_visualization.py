@@ -174,3 +174,40 @@ def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
     ax.legend(targets)
     ax.grid()
     return fig
+
+def expand_columns(df, list_columns):
+    df_result = df.copy(deep = True)
+    for col in list_columns:
+        colvalues = df_result[col].unique()
+        for colvalue in colvalues:
+            newcol_name = "{}_is_{}".format(col, colvalue)
+            df_result.loc[df_result[col] == colvalue, newcol_name] = 1
+            df_result.loc[df_result[col] != colvalue, newcol_name] = 0
+    df_result.drop(list_columns, inplace=True, axis=1)
+    return df_result
+
+import seaborn as sn
+
+def visualize_final_results():
+    data = pd.read_csv("../../all_results.csv", sep="|", index_col=False)
+    config_options = data["experiment"].str.split("_", expand=True,)
+    classType = data["experiment"].str.split("[A-Z]", n=1, expand=True,)[0]
+    config_options = pd.concat([classType, config_options], axis = 1)
+    config_options.columns = range(config_options.shape[1])
+    config_options[1] = data["experiment"].str.split("[A-Z]", n=1, expand=True,)[1]
+    indoor = data["experiment"].str.split("ind", n=1, expand=True,)[1]
+    config_options = pd.concat([indoor, config_options], axis = 1)
+    config_options.columns = range(config_options.shape[1])
+    config_options[2] = config_options[2].str.split("ind", n=1, expand=True,)[0]
+    config_options.columns = ['indoor', 'classification type', 'recordings', 'fingerprinting', 'features', 'window size', 'null class']
+    data = pd.concat([config_options, data], axis = 1).drop(columns=["experiment"]).replace("fingerprintingFalse", False).replace("fingerprintingTrue", True).replace("fingerprintingTrue", True).replace("nullClassIncludedTrue", "MultiTrue").replace("nullClassIncludedFalse", "MultiFalse").replace("oorFalse.*", False, regex=True).replace("oorTrue.*", True, regex=True)
+    data["null class"] = data["null class"].fillna("Binary")
+    data = data[['classification type', 'recordings', 'indoor', 'fingerprinting', 'features', 'window size', 'null class', 'Logistic_Regression']]
+    data = expand_columns(data, ['classification type', 'recordings', 'features', 'window size', 'null class'])
+
+    corrMatrix = data.corr()["Logistic_Regression"].drop(["classification type_is_multi"], axis=0)
+    sn.heatmap(pd.DataFrame(corrMatrix), annot=True)
+    plt.show()
+
+def test_final_results_visualization():
+    visualize_final_results()
