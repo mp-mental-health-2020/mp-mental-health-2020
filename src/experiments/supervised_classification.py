@@ -309,6 +309,8 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
                         for fingerprinting in use_fingerprinting_approach:
                             if (not indoor) and fingerprinting: continue
                             for size in window_sizes:
+                                if not selected_activities:
+                                    selected_activities = [None]
                                 for activities in selected_activities:
                                     for included in null_class_included:
                                         if type == "binary" and (not included):
