@@ -99,7 +99,6 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     labels_ocd_multiclass = labels.reset_index(drop=True)
 
     labels_ocd_multiclass = labels_ocd_multiclass.str.replace("  ", " ").str.strip()
-
     assert set(labels_ocd_multiclass) == {'checking oven',
                                           'cleaning cup',
                                           'cleaning floor',
@@ -178,7 +177,7 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     path = os.getcwd()
     participants_folder = '-'.join(experiment_dirs_selected) + "/"
     selected_activities_str = "_activities:" + ",".join(selected_activities).replace(" ", "") if selected_activities else ""
-    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}/".format(use_indoor, use_fingerprinting_approach,
+    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_{}/".format(use_indoor, use_fingerprinting_approach,
                                                                              feature_calculation_setting.__class__.__name__,
                                                                              window_size, selected_activities_str)
     path = path + "/output_experiments/binary/" + participants_folder + sub_folder
@@ -309,6 +308,8 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
                         for fingerprinting in use_fingerprinting_approach:
                             if (not indoor) and fingerprinting: continue
                             for size in window_sizes:
+                                if not selected_activities:
+                                    selected_activities = [None]
                                 for activities in selected_activities:
                                     for included in null_class_included:
                                         if type == "binary" and (not included):
