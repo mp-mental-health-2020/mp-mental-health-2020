@@ -94,10 +94,10 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     del null_chunks
     # Segmentation
 
-    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(chunks_ocd,
-                                                                                                                               chunks_null_class,
-                                                                                                                               window_size,
-                                                                                                                               segmentation_method)
+    chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(chunks_ocd = chunks_ocd,
+                                                                                                                               chunks_null_class = chunks_null_class,
+                                                                                                                               window_size = window_size,
+                                                                                                                               segmentation_method = segmentation_method)
 
     assert len(labels_null_segmented) != 0
 
@@ -119,7 +119,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
                                           'walking',
                                           'washing hands'}
 
-    _, labels_ocd_segmented_multiclass = segment_windows(chunks_ocd, labels_ocd_multiclass.to_numpy(), window_size, segmentation_method)
+    _, labels_ocd_segmented_multiclass = segment_windows(chunks = chunks_ocd, classes = labels_ocd_multiclass.to_numpy(), window_size = window_size, segmentation_method = segmentation_method)
 
     del chunks_ocd
     del chunks_null_class
@@ -147,6 +147,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
 
     # Feature selection for multi class OCD activities incl null
     impute(X_multi_class_classification)
+    warnings.warn(X_multi_class_classification + "; " + labels_multi_class_classification)
     X_multi_class_classification_selected = select_features(X_multi_class_classification,
                                                             labels_multi_class_classification)
 
@@ -230,10 +231,10 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     # Segmentation
 
     chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(
-        chunks_ocd,
-        chunks_null_class,
-        window_size,
-        segmentation_method)
+        chunks_ocd = chunks_ocd,
+        chunks_null_class = chunks_null_class,
+        window_size = window_size,
+        segmentation_method = segmentation_method)
 
     assert len(labels_null_segmented) != 0
 
@@ -241,12 +242,13 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
         [chunks_ocd_segmented, chunks_null_segmented],
         [labels_ocd_segmented, labels_null_segmented])
     assert len(set(labels_null_classification)) == 2
-
+    #warnings.warn("before: " + str(null_classification_df) + " " + str(labels_null_classification))
     X_null_class_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor,
                                                               feature_set_config=feature_calculation_setting,
                                                               use_fingerprinting_approach=use_fingerprinting_approach)
-
+    #warnings.warn("after: " + str(X_null_class_classification) + " " + str(labels_null_classification))
     impute(X_null_class_classification)
+
     X_null_classification_selected = select_features(X_null_class_classification, labels_null_classification)
 
     scaler = StandardScaler()
@@ -296,13 +298,14 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
     selected_activities = config["activities"]
     null_class_included = config["null_class_included"]
     right_hand_only = config["right_hand_only"]
+    #TODO fix calculation (binary - null class; selected_activities)
     if True in use_indoor:
         total_number_of_experiments_without_exclude = len(classification_types) * len(experiment_dir_paths) * len(experiment_dirs_selected) * (
                 len(use_indoor) + len(use_fingerprinting_approach) - 1) * len(feature_calculation_settings) * len(window_sizes) * len(
-            null_class_included)
+            null_class_included) * len(overlaps)
     else:
         total_number_of_experiments_without_exclude = len(classification_types) * len(experiment_dir_paths) * len(experiment_dirs_selected) * len(
-            use_indoor) * len(feature_calculation_settings) * len(window_sizes) * len(null_class_included)
+            use_indoor) * len(feature_calculation_settings) * len(window_sizes) * len(null_class_included) * len(overlaps)
     number_of_current_experiment = 1
     exclude = config["exclude"]
     excluded_configuration = False
@@ -381,8 +384,8 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
 
 
 def test_run_multiclass_recordings_clf():
-    #run_experiments(config_file='/tmp/pycharm_project_258/src/experiments/config_files/experiments_config.json')
-    run_experiments(config_file='./src/experiments/config_files/experiments_config.json')
+    run_experiments(config_file='/tmp/pycharm_project_688/src/experiments/config_files/experiments_config.json')
+    #run_experiments(config_file='./src/experiments/config_files/experiments_config.json')
 
 
 """
