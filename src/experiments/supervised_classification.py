@@ -16,11 +16,12 @@ from preprocessing import concat_chunks_for_feature_extraction, \
     preprocess_chunks_for_null_test, \
     segment_for_null_classification, segment_windows
 from output.output import output_figure
+from shared_constants import SEGMENTATION_NO_OVERLAP, SEGMENTATION_OVERLAP
 from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
-                                  feature_calculation_setting, null_class_included, right_hand_only):
+                                  feature_calculation_setting, null_class_included, right_hand_only, segmentation_method, selected_activities=None):
     """
     Parameters
     ----------
@@ -40,9 +41,10 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     right_hand_only = False  # TODO rework
     path = os.getcwd()
     participants_folder = '-'.join(experiment_dirs_selected) + "/"
-    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_nullClassIncluded{}/".format(use_indoor, use_fingerprinting_approach,
+    selected_activities_str = "_activities:" + ",".join(selected_activities).replace(" ", "") if selected_activities else ""
+    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_segmentationMethod{}_selectedActivities{}_nullClassIncluded{}/".format(use_indoor, use_fingerprinting_approach,
                                                                                                  feature_calculation_setting.__class__.__name__,
-                                                                                                 window_size, null_class_included)
+                                                                                                 window_size, segmentation_method, selected_activities_str, null_class_included)
     path = path + "/output_experiments/multi/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
@@ -52,21 +54,23 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
 
     warnings.warn(participants_folder)
     warnings.warn(
-        "Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; null_class_included: {} \n\n".format(
-            use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, null_class_included))
+        "Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; segmentation_method: {}; selected_activities: {}; null_class_included: {} \n\n".format(
+            use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, segmentation_method, selected_activities_str, null_class_included))
     print(participants_folder)
     print(
-        "Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; null_class_included: {}".format(use_indoor,
+        "Multi class classification: using indoor: {}; fingerprinting: {}; FC params: {}; window_size: {}; segmentation_method: {}; selected_activities: {}; null_class_included: {}".format(use_indoor,
                                                                                                                                            use_fingerprinting_approach,
                                                                                                                                            feature_calculation_setting.__class__.__name__,
                                                                                                                                            window_size,
+                                                                                                                                           segmentation_method,
+                                                                                                                                           selected_activities_str,
                                                                                                                                            null_class_included))
 
     experiment_dirs = get_sub_directories(experiment_dir_path)
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
     # Read data
     sample_rate = 50
-    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor)
+    chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, require_indoor=use_indoor,  selected_activities=selected_activities)
 
     # TODO test right hand only and change activities to only include both and right handed activities
     if right_hand_only:
@@ -92,7 +96,8 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
 
     chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(chunks_ocd,
                                                                                                                                chunks_null_class,
-                                                                                                                               window_size)
+                                                                                                                               window_size,
+                                                                                                                               segmentation_method)
 
     assert len(labels_null_segmented) != 0
 
@@ -114,7 +119,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
                                           'walking',
                                           'washing hands'}
 
-    _, labels_ocd_segmented_multiclass = segment_windows(chunks_ocd, labels_ocd_multiclass.to_numpy(), window_size)
+    _, labels_ocd_segmented_multiclass = segment_windows(chunks_ocd, labels_ocd_multiclass.to_numpy(), window_size, segmentation_method)
 
     del chunks_ocd
     del chunks_null_class
@@ -172,14 +177,14 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
 
 
 def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
-                              feature_calculation_setting, selected_activities=None):
+                              feature_calculation_setting, segmentation_method, selected_activities=None):
     right_hand_only = False  # TODO rework
     path = os.getcwd()
     participants_folder = '-'.join(experiment_dirs_selected) + "/"
     selected_activities_str = "_activities:" + ",".join(selected_activities).replace(" ", "") if selected_activities else ""
-    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_{}/".format(use_indoor, use_fingerprinting_approach,
+    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_segmentationMethod{}_selectedActivties{}/".format(use_indoor, use_fingerprinting_approach,
                                                                              feature_calculation_setting.__class__.__name__,
-                                                                             window_size, selected_activities_str)
+                                                                             window_size, segmentation_method, selected_activities_str)
     path = path + "/output_experiments/binary/" + participants_folder + sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
@@ -188,11 +193,11 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     sys.stdout = open(path + "console.txt", 'w')
 
     warnings.warn(participants_folder)
-    warnings.warn("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {} {} \n\n".format(
-        use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, selected_activities_str))
+    warnings.warn("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {}; segmentation_method: {}; selected_activities: {} \n\n".format(
+        use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, segmentation_method, selected_activities_str))
     print(participants_folder)
-    print("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {} {}".format(
-        use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, selected_activities_str))
+    print("Binary classification: using indoor: {}; using fingerprinting: {}; FC params: {}; window_size: {}; segmentation_method: {}; selected_activities: {}".format(
+        use_indoor, use_fingerprinting_approach, feature_calculation_setting.__class__.__name__, window_size, segmentation_method, selected_activities_str))
 
     experiment_dirs = get_sub_directories(experiment_dir_path)
     experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
@@ -227,7 +232,8 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     chunks_ocd_segmented, labels_ocd_segmented, chunks_null_segmented, labels_null_segmented = segment_for_null_classification(
         chunks_ocd,
         chunks_null_class,
-        window_size)
+        window_size,
+        segmentation_method)
 
     assert len(labels_null_segmented) != 0
 
@@ -274,7 +280,7 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
 
     # output_figure(fig=swarm_plot_top_features(pd.DataFrame(X_y).reset_index()), path=path, name="swarm_plot_top_features", format="png")
 
-
+# TODO test
 def run_experiments(config_file='./config_files/experiments_config.json'):
     import json
     with open(config_file) as f:
@@ -286,6 +292,7 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
     use_fingerprinting_approach = config["use_fingerprinting_approach"]
     feature_calculation_settings = config["feature_calculation_settings"]
     window_sizes = config["window_sizes"]
+    overlaps = config["overlaps"]
     selected_activities = config["activities"]
     null_class_included = config["null_class_included"]
     right_hand_only = config["right_hand_only"]
@@ -315,54 +322,62 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
                                         if type == "binary" and (not included):
                                             continue
                                         for right_hand in right_hand_only:
-                                            for i in range(len(exclude)):
-                                                if not excluded_configuration and \
-                                                        type in exclude[i]["classification_types"] and \
-                                                        path in exclude[i]["experiment_dir_paths"] and \
-                                                        experiment_dir in exclude[i]["experiment_dirs_selected"] and \
-                                                        indoor in exclude[i]["use_indoor"] and \
-                                                        fingerprinting in exclude[i]["use_fingerprinting_approach"] and \
-                                                        setting in exclude[i]["feature_calculation_settings"] and \
-                                                        size in exclude[i]["window_sizes"] and \
-                                                        included in exclude[i]["null_class_included"] and \
-                                                        right_hand in exclude[i]["right_hand_only"]:
-                                                    excluded_configuration = True
-                                            if not excluded_configuration:
-                                                minimal = MinimalFCParameters()
-                                                del minimal['length']
-                                                efficient = EfficientFCParameters()
-                                                del efficient['length']
-                                                comprehensive = ComprehensiveFCParameters()
-                                                del comprehensive['length']
-                                                if setting == "minimal":
-                                                    setting = minimal
-                                                if setting == "efficient":
-                                                    setting = efficient
-                                                if setting == "comprehensive":
-                                                    setting = comprehensive
-                                                warnings.warn("Execute experiment number: " + str(number_of_current_experiment) + "/" + str(
-                                                    total_number_of_experiments_without_exclude))
-                                                if type == "multi":
-                                                    run_multiclass_classification(experiment_dir_path=path,
+                                            for overlap in overlaps:
+                                                for i in range(len(exclude)):
+                                                    if not excluded_configuration and \
+                                                            type in exclude[i]["classification_types"] and \
+                                                            path in exclude[i]["experiment_dir_paths"] and \
+                                                            experiment_dir in exclude[i]["experiment_dirs_selected"] and \
+                                                            indoor in exclude[i]["use_indoor"] and \
+                                                            fingerprinting in exclude[i]["use_fingerprinting_approach"] and \
+                                                            setting in exclude[i]["feature_calculation_settings"] and \
+                                                            size in exclude[i]["window_sizes"] and \
+                                                            included in exclude[i]["null_class_included"] and \
+                                                            right_hand in exclude[i]["right_hand_only"]:
+                                                        excluded_configuration = True
+                                                if not excluded_configuration:
+                                                    minimal = MinimalFCParameters()
+                                                    del minimal['length']
+                                                    efficient = EfficientFCParameters()
+                                                    del efficient['length']
+                                                    comprehensive = ComprehensiveFCParameters()
+                                                    del comprehensive['length']
+                                                    if setting == "minimal":
+                                                        setting = minimal
+                                                    if setting == "efficient":
+                                                        setting = efficient
+                                                    if setting == "comprehensive":
+                                                        setting = comprehensive
+                                                    if overlap:
+                                                        segmentation_method = SEGMENTATION_OVERLAP
+                                                    if not overlap:
+                                                        segmentation_method = SEGMENTATION_NO_OVERLAP
+                                                    warnings.warn("Execute experiment number: " + str(number_of_current_experiment) + "/" + str(
+                                                        total_number_of_experiments_without_exclude))
+                                                    if type == "multi":
+                                                        run_multiclass_classification(experiment_dir_path=path,
+                                                                                      experiment_dirs_selected=experiment_dir,
+                                                                                      use_indoor=indoor,
+                                                                                      use_fingerprinting_approach=fingerprinting,
+                                                                                      feature_calculation_setting=setting,
+                                                                                      window_size=size,
+                                                                                      null_class_included=included,
+                                                                                      right_hand_only=right_hand,
+                                                                                      selected_activities=activities,
+                                                                                      segmentation_method=segmentation_method)
+                                                        matplotlib.pyplot.close("all")
+                                                    if type == "binary":
+                                                        run_binary_classification(experiment_dir_path=path,
                                                                                   experiment_dirs_selected=experiment_dir,
                                                                                   use_indoor=indoor,
                                                                                   use_fingerprinting_approach=fingerprinting,
                                                                                   feature_calculation_setting=setting,
                                                                                   window_size=size,
-                                                                                  null_class_included=included,
-                                                                                  right_hand_only=right_hand)
-                                                    matplotlib.pyplot.close("all")
-                                                if type == "binary":
-                                                    run_binary_classification(experiment_dir_path=path,
-                                                                              experiment_dirs_selected=experiment_dir,
-                                                                              use_indoor=indoor,
-                                                                              use_fingerprinting_approach=fingerprinting,
-                                                                              feature_calculation_setting=setting,
-                                                                              window_size=size,
-                                                                              selected_activities=activities)
-                                                    matplotlib.pyplot.close("all")
-                                                number_of_current_experiment += 1
-                                            excluded_configuration = False
+                                                                                  selected_activities=activities,
+                                                                                  segmentation_method=segmentation_method)
+                                                        matplotlib.pyplot.close("all")
+                                                    number_of_current_experiment += 1
+                                                excluded_configuration = False
 
 
 def test_run_multiclass_recordings_clf():
