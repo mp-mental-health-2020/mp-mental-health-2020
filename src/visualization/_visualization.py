@@ -180,7 +180,7 @@ def expand_columns(df, list_columns):
     for col in list_columns:
         colvalues = df_result[col].unique()
         for colvalue in colvalues:
-            newcol_name = "{}_is_{}".format(col, colvalue)
+            newcol_name = "{} is {}".format(col, colvalue)
             df_result.loc[df_result[col] == colvalue, newcol_name] = 1
             df_result.loc[df_result[col] != colvalue, newcol_name] = 0
     df_result.drop(list_columns, inplace=True, axis=1)
@@ -199,14 +199,26 @@ def visualize_final_results():
     config_options = pd.concat([indoor, config_options], axis = 1)
     config_options.columns = range(config_options.shape[1])
     config_options[2] = config_options[2].str.split("ind", n=1, expand=True,)[0]
-    config_options.columns = ['indoor', 'classification type', 'recordings', 'fingerprinting', 'features', 'window size', 'null class']
-    data = pd.concat([config_options, data], axis = 1).drop(columns=["experiment"]).replace("fingerprintingFalse", False).replace("fingerprintingTrue", True).replace("fingerprintingTrue", True).replace("nullClassIncludedTrue", "MultiTrue").replace("nullClassIncludedFalse", "MultiFalse").replace("oorFalse.*", False, regex=True).replace("oorTrue.*", True, regex=True)
-    data["null class"] = data["null class"].fillna("Binary")
-    data = data[['classification type', 'recordings', 'indoor', 'fingerprinting', 'features', 'window size', 'null class', 'Logistic_Regression']]
-    data = expand_columns(data, ['classification type', 'recordings', 'features', 'window size', 'null class'])
+    config_options.columns = ['proximity used', 'classification type binary', 'recordings multi', 'fingerprinting used', 'features minimal', 'window size', 'null class used']
+    data = pd.concat([config_options, data], axis = 1).drop(columns=["experiment"]).replace("fingerprintingFalse", False).replace("fingerprintingTrue", True).replace("fingerprintingTrue", True).replace("nullClassIncludedTrue", True).replace("nullClassIncludedFalse", False).replace("oorFalse.*", False, regex=True).replace("oorTrue.*", True, regex=True).replace("riane", False).replace("na-2-Ariane-Julian-Wiktoria.*", True, regex=True).replace("binary", True).replace("multi", False).replace("featuresMinimalFCParameters", True).replace("featuresEfficientFCParameters", False).replace("windowSize100", "100").replace("windowSize200", "200")
+    data["null class used"] = data["null class used"].fillna("Binary")
+    data['proximity used'].loc[(data['proximity used']) & (data['fingerprinting used'])] = False
+    data = data[['classification type binary', 'null class used', 'recordings multi', 'features minimal', 'proximity used', 'fingerprinting used', 'window size', 'Logistic_Regression']]
+    data = expand_columns(data, ['window size'])
+    data = data.drop("window size is windowSize50", axis=1)
+    data_binary = data.loc[data['classification type binary']].drop(["null class used", "classification type binary"], axis = 1)
+    data_multi = data.loc[data['classification type binary'] == False].drop("classification type binary", axis = 1)
 
-    corrMatrix = data.corr()["Logistic_Regression"].drop(["classification type_is_multi"], axis=0)
-    sn.heatmap(pd.DataFrame(corrMatrix), annot=True)
+    #print(data_multi["Logistic_Regression"].sum()/len(data_multi["Logistic_Regression"]))
+    y = data_multi[["Logistic_Regression"]]
+    X = data_multi.drop("Logistic_Regression", axis = 1)
+    import statsmodels.api as sm
+    X = sm.add_constant(X)
+    results = sm.OLS(y, X.astype(float), missing="drop").fit()
+    print(results.params)
+
+    #corrMatrix = data_multi.corr()["Logistic_Regression"]
+    sn.heatmap(pd.DataFrame(results.params).drop("const", axis = 0), annot=True) #.drop("Logistic_Regression", axis = 0)
     plt.show()
 
 def test_final_results_visualization():
