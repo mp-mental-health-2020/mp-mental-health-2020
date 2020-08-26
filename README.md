@@ -1,10 +1,5 @@
 # Activity recognition for OCD (Mental Health master project 2020)
 
-Branch | Travis CI  |
------- | ---------- |
-master|[![Build Status](https://travis-ci.org/mp-mental-health-2020/mp-mental-health-2020.svg?branch=master)](https://travis-ci.org/github/mp-mental-health-2020/mp-mental-health-2020)|
-dev|[![Build Status](https://travis-ci.org/mp-mental-health-2020/mp-mental-health-2020.svg?branch=dev)](https://travis-ci.org/github/mp-mental-health-2020/mp-mental-health-2020)|
-
 ## Setup
 
 We use a __python 3.7__ environment for this project.
