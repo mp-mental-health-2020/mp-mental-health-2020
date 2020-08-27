@@ -22,10 +22,11 @@ use_fingerprinting_approach = True
 window_size = 100
 feature_calculation_setting = MinimalFCParameters()
 
-experiment_dirs_selected = ["Ana-2","Anne","Ariane","Cilly","Fabi","Julian","Julius","Wiktoria"]
+experiment_dirs_selected = ["Ana-2","Anne2","Anne3","Julius","Ariane","Cilly","Fabi","Jonas","Julian","Marvin","Wiktoria"]
 experiment_dirs = [exp_dir for exp_dir in experiment_dirs if exp_dir.split("/")[-1] in experiment_dirs_selected]
 
-selected_activities = ["washing hands", "drying hands"]
+selected_activities = ["pushing door", "pulling door"]
+#selected_activities = ["cleaning window", "cleaning table"]
 
 # Read data
 chunks, null_chunks, y = read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True,
@@ -66,7 +67,7 @@ trained_model = train_and_select_best_model(X_null_classification_scaled, labels
 
 # test on long recording
 
-test_data_dir = experiment_dir_path + "Marvin/"
+test_data_dir = experiment_dir_path + "Anne/"
 chunks_test, null_chunks_test, y_test = read_experiments_in_dir([test_data_dir], sample_rate, drop_lin_acc=True,
                                                  require_indoor=use_indoor)
 
@@ -82,18 +83,26 @@ chunks_test_segmented, labels_test_segmented = segment_windows(chunks_test_all, 
 block_size = 10
 segment_id = 0
 blocks = [chunks_test_segmented[i*block_size:(i+1)*block_size] for i in range(int(len(chunks_test_segmented)/block_size))]
-for b in blocks:
-    current_df, _ = concat_chunks_for_feature_extraction(chunks=[b], labels=[pd.Series(["Test"] * block_size)]) # the labels don't matter
-    X_test = extract_timeseries_features(current_df, use_indoor=use_indoor,
-                                                              feature_set_config=feature_calculation_setting,
-                                                              use_fingerprinting_approach=use_fingerprinting_approach)
-    impute(X_test)
-    X_test = X_test.loc[:, list(selected_features)]
-    X_test_scaled = scaler.transform(X_test)
-    predictions = predict(X=X_test, model=trained_model)
-    for i in range(block_size):
-        print("Action: {}: start time: {}: {}".format(b[i]["action_id"][0], b[i].reset_index()["index"][0].total_seconds(), predictions[i]))
 
+with open("predictions_pushing_pulling_door.tsv", "w") as pred_file:
+    for b in blocks:
+        current_df, _ = concat_chunks_for_feature_extraction(chunks=[b], labels=[pd.Series(["Test"] * block_size)]) # the labels don't matter
+        X_test = extract_timeseries_features(current_df, use_indoor=use_indoor,
+                                                                  feature_set_config=feature_calculation_setting,
+                                                                  use_fingerprinting_approach=use_fingerprinting_approach)
+        impute(X_test)
+        X_test = X_test.loc[:, list(selected_features)]
+        X_test_scaled = scaler.transform(X_test)
+        predictions = predict(X=X_test_scaled, model=trained_model)
+        for i in range(block_size):
+            binary_pred = 1 if predictions[i] == "OCD activity" else 0
+            pred_file.write("{},{}\n".format(b[i].reset_index()["index"][0].total_seconds(), binary_pred))
+            print("{},{}".format(b[i].reset_index()["index"][0].total_seconds(), binary_pred))
+
+            # print("Action: {}: start time: {}: {}".format(b[i]["action_id"][0], b[i].reset_index()["index"][0].total_seconds(), predictions[i]))
+        del X_test
+        del X_test_scaled
+        del current_df
 # classifier = train multiclass clf
 # test_segmented = segment_windows(...)
 # for each in test_segmented:
