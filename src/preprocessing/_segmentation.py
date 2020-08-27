@@ -21,10 +21,13 @@ def segment_windows(chunks, classes, window_size, segmentation_method=SEGMENTATI
     indices = []
     for c, l in zip(chunks, classes):
         # for the 'overlap' method the only difference is that the number of segments changes
-        number_of_segments = int(len(c) / window_size) if segmentation_method==SEGMENTATION_NO_OVERLAP else int(len(c) / (window_size*0.5))
+        number_of_segments = int(len(c) / window_size) if segmentation_method==SEGMENTATION_NO_OVERLAP else (int((len(c) / window_size)) + int(((len(c) / window_size) - 1)))
         for i in range(0, number_of_segments):
             # TODO: test if samples shorter than window_size are removed
-            c_new = c[i * window_size:(i + 1) * window_size]
+            if segmentation_method==SEGMENTATION_NO_OVERLAP:
+                c_new = c[i * window_size:(i + 1) * window_size]
+            else:
+                c_new = c[((i * window_size)-int(window_size*0.5*i)):(((i + 1) * window_size)-int(window_size*0.5*i))]
             action_id = c["action_id"][0]
             c_new["combined_id"] = [(action_id, i)] * len(c_new)
             c_new["action_id"] = [action_id] * len(c_new)
