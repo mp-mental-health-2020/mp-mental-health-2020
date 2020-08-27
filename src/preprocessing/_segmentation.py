@@ -21,7 +21,7 @@ def segment_windows(chunks, classes, window_size, segmentation_method=SEGMENTATI
     indices = []
     for c, l in zip(chunks, classes):
         # for the 'overlap' method the only difference is that the number of segments changes
-        number_of_segments = int(len(c) / window_size) if segmentation_method==SEGMENTATION_NO_OVERLAP else (int((len(c) / window_size)) + int(((len(c) / window_size) - 1)))
+        number_of_segments = int(len(c) / window_size) if segmentation_method==SEGMENTATION_NO_OVERLAP else int(len(c) / (window_size*0.5))-1
         for i in range(0, number_of_segments):
             # TODO: test if samples shorter than window_size are removed
             if segmentation_method==SEGMENTATION_NO_OVERLAP:
