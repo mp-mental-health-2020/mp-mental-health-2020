@@ -19,7 +19,6 @@ from output.output import output_figure
 from shared_constants import SEGMENTATION_NO_OVERLAP, SEGMENTATION_OVERLAP
 from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
-
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
                                   feature_calculation_setting, null_class_included, right_hand_only, segmentation_method, selected_activities=None):
     """
@@ -42,10 +41,12 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     path = os.getcwd()
     participants_folder = '-'.join(experiment_dirs_selected) + "/"
     selected_activities_str = "_activities:" + ",".join(selected_activities).replace(" ", "") if selected_activities else ""
-    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_segmentationMethod{}_selectedActivities{}_nullClassIncluded{}/".format(use_indoor, use_fingerprinting_approach,
+    sub_folder = "IL{}_fingerp{}_feat{}_winSize{}_segMeth{}_nullIncl{}/".format(use_indoor, use_fingerprinting_approach,
                                                                                                  feature_calculation_setting.__class__.__name__,
-                                                                                                 window_size, segmentation_method, selected_activities_str, null_class_included)
-    path = path + "/output_experiments/multi/" + participants_folder + sub_folder
+                                                                                                 window_size, segmentation_method, null_class_included)
+
+    activities_sub_folder = selected_activities_str + "/"
+    path = path + "/output_experiments/multi/" + participants_folder + sub_folder + activities_sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
     #else:
@@ -104,20 +105,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     labels_ocd_multiclass = labels.reset_index(drop=True)
 
     labels_ocd_multiclass = labels_ocd_multiclass.str.replace("  ", " ").str.strip()
-    assert set(labels_ocd_multiclass) == {'checking oven',
-                                          'cleaning cup',
-                                          'cleaning floor',
-                                          'cleaning leg',
-                                          'cleaning table',
-                                          'cleaning window',
-                                          'drying hands',
-                                          'pulling door',
-                                          'pulling hair',
-                                          'pushing door',
-                                          'sitting down',
-                                          'standing up',
-                                          'walking',
-                                          'washing hands'}
+    assert set(labels_ocd_multiclass) == set(selected_activities)
 
     _, labels_ocd_segmented_multiclass = segment_windows(chunks = chunks_ocd, classes = labels_ocd_multiclass.to_numpy(), window_size = window_size, segmentation_method = segmentation_method)
 
@@ -182,11 +170,12 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     right_hand_only = False  # TODO rework
     path = os.getcwd()
     participants_folder = '-'.join(experiment_dirs_selected) + "/"
-    selected_activities_str = "_activities:" + ",".join(selected_activities).replace(" ", "") if selected_activities else ""
-    sub_folder = "indoor{}_fingerprinting{}_features{}_windowSize{}_segmentationMethod{}_selectedActivties{}/".format(use_indoor, use_fingerprinting_approach,
+    selected_activities_str = ",".join(selected_activities).replace(" ", "") if selected_activities else ""
+    sub_folder = "IL{}_fingerp{}_feat{}_winSize{}_segMeth{}/".format(use_indoor, use_fingerprinting_approach,
                                                                              feature_calculation_setting.__class__.__name__,
-                                                                             window_size, segmentation_method, selected_activities_str)
-    path = path + "/output_experiments/binary/" + participants_folder + sub_folder
+                                                                             window_size, segmentation_method)
+    activities_sub_folder = selected_activities_str + "/"
+    path = path + "/output_experiments/binary/" + participants_folder + sub_folder + activities_sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
     #else:
@@ -297,7 +286,7 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
     overlaps = config["overlaps"]
     selected_activities = config["activities"]
     null_class_included = config["null_class_included"]
-    right_hand_only = config["right_hand_only"]
+    right_hand_only = [False]
     #TODO fix calculation (binary - null class; selected_activities)
     if True in use_indoor:
         total_number_of_experiments_without_exclude = len(classification_types) * len(experiment_dir_paths) * len(experiment_dirs_selected) * (
