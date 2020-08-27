@@ -135,7 +135,7 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
 
     # Feature selection for multi class OCD activities incl null
     impute(X_multi_class_classification)
-    warnings.warn(X_multi_class_classification + "; " + labels_multi_class_classification)
+    warnings.warn(str(X_multi_class_classification) + "; " + str(labels_multi_class_classification))
     X_multi_class_classification_selected = select_features(X_multi_class_classification,
                                                             labels_multi_class_classification)
 
