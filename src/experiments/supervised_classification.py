@@ -77,7 +77,6 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     if right_hand_only:
         chunks = chunks["right"]
         null_chunks = null_chunks["right"]
-    del experiment_dir_path
     del experiment_dirs
     print("Finished reading data")
 
@@ -407,7 +406,6 @@ def run_experiments(config_file='./config_files/experiments_config.json'):
                                                                                       feature_calculation_setting=setting,
                                                                                       window_size=size,
                                                                                       null_class_included=included,
-                                                                                      right_hand_only=right_hand,
                                                                                       selected_activities=activities,
                                                                                       segmentation_method=segmentation_method)
                                                         matplotlib.pyplot.close("all")
