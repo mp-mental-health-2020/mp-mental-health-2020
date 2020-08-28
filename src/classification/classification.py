@@ -59,6 +59,7 @@ def classify_process(models):
                              columns=labels_set)
         df_cm["sum"] = df_cm.sum(axis=1)
         df_cm = df_cm.loc[:, labels_set].div(df_cm["sum"], axis=0)
+        df_cm = df_cm.round(2)
         fig = plt.figure(figsize=(10, 7))
         sn.heatmap(df_cm, annot=True, fmt='g')
         plt.show()
