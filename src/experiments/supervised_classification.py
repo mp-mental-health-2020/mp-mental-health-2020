@@ -20,7 +20,7 @@ from shared_constants import SEGMENTATION_NO_OVERLAP, SEGMENTATION_OVERLAP
 from visualization._visualization import pca_2d, plot_duration_histogram, sne_2d
 
 def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected, use_indoor, use_fingerprinting_approach, window_size,
-                                  feature_calculation_setting, null_class_included, right_hand_only, segmentation_method, selected_activities=None):
+                                  feature_calculation_setting, null_class_included, segmentation_method, selected_activities=None):
     """
     Parameters
     ----------
@@ -49,8 +49,8 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     path = path + "/output_experiments/multi/" + participants_folder + sub_folder + activities_sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
-    #else:
-    #    return
+    else: #Only if you want to skip already (half)done experiments
+        return
     sys.stdout = open(path + "console.txt", 'w')
 
     warnings.warn(participants_folder)
@@ -129,6 +129,24 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
     del chunks_null_class
 
     #assert len(set(labels_ocd_multiclass)) == len(set(labels_ocd_segmented_multiclass)) TODO adjust if activities are not in segments any more (200)
+    if (len(set(labels_ocd_segmented_multiclass)) == 1 and null_class_included) or (len(set(labels_ocd_segmented_multiclass)) == 2 and not null_class_included):
+        f = open(path + "not_enough_classes.txt", "a")
+        f.write("classes:" + str(set(labels_ocd_segmented_multiclass)))
+        f.close()
+        run_binary_classification(experiment_dir_path=experiment_dir_path,
+                                                                                  experiment_dirs_selected=experiment_dirs_selected,
+                                                                                  use_indoor=use_indoor,
+                                                                                  use_fingerprinting_approach=use_fingerprinting_approach,
+                                                                                  feature_calculation_setting=feature_calculation_setting,
+                                                                                  window_size=window_size,
+                                                                                  selected_activities=selected_activities,
+                                                                                  segmentation_method=segmentation_method)
+        return
+    if (len(set(labels_ocd_segmented_multiclass)) < 1) or (len(set(labels_ocd_segmented_multiclass)) < 2 and not null_class_included):
+        f = open(path + "not_enough_classes.txt", "a")
+        f.write("classes:" + str(set(labels_ocd_segmented_multiclass)))
+        f.close()
+        return
 
     # reuse chunks_ocd_segmented from the segmentation for the binary classifier
     assert len(labels_ocd_segmented_multiclass) == len(chunks_ocd_segmented)
@@ -191,8 +209,8 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     path = path + "/output_experiments/binary/" + participants_folder + sub_folder + activities_sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
-    #else:
-    #    return
+    else: #Only if you want to skip already (half)done experiments; IMPORTANT: also used for additional computation for too less classes multi to binary now
+        return
     sys.stdout = open(path + "console.txt", 'w')
 
     warnings.warn(participants_folder)
@@ -243,7 +261,14 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     null_classification_df, labels_null_classification = concat_chunks_for_feature_extraction(
         [chunks_ocd_segmented, chunks_null_segmented],
         [labels_ocd_segmented, labels_null_segmented])
+
+    if (len(set(labels_null_classification)) < 2):
+        f = open(path + "not_enough_classes.txt", "a")
+        f.write("classes:" + str(set(labels_null_classification)))
+        f.close()
+        return
     assert len(set(labels_null_classification)) == 2
+
     X_null_class_classification = extract_timeseries_features(null_classification_df, use_indoor=use_indoor,
                                                               feature_set_config=feature_calculation_setting,
                                                               use_fingerprinting_approach=use_fingerprinting_approach)
