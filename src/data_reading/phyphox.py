@@ -79,7 +79,6 @@ def read_experiment(experiment_path, sensors=None, offsets=None, drop_lin_acc=Tr
     data_frames = {}
     for file_name in file_names:
         data_frame = pd.read_csv(file_name)
-
         # drop the linear acceleration columns here
         if drop_lin_acc:
             data_frame.drop(columns=["linear_acceleration x", "linear_acceleration y", "linear_acceleration z"], inplace=True)
@@ -144,7 +143,7 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
     y_columns = ["start", "end", "label", "hand"]
     y = pd.DataFrame(columns=y_columns)
 
-    for directory in experiment_dirs:
+    for directory, user in zip(experiment_dirs, range(len(experiment_dirs))):
         offsets = {}
         try:
             with open(directory + "/offset.txt") as f:
@@ -159,6 +158,9 @@ def read_experiments_in_dir(experiment_dirs, sample_rate, drop_lin_acc=True, req
 
         data_frames = {key: align_data(data_frame, listening_rate=1000 / sample_rate, reference_sensor=None) for
                        key, data_frame in data_frames.items()}
+        print(user)
+        for key, data_frame in data_frames.items():
+            data_frame["user"] = user
 
         if require_indoor:
             indoor_data = get_indoor_data(directory, sample_rate, offsets=offsets)

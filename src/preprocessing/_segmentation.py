@@ -5,7 +5,7 @@ from shared_constants import SEGMENTATION_NO_OVERLAP
 
 def segment_windows(chunks, classes, window_size, segmentation_method=SEGMENTATION_NO_OVERLAP):
     """
-
+    Splits the chunks into segments according to the window size.
     Parameters
     ----------
     chunks: timeseries chunks according to the action_ids: for testing this will take an array with only one item
@@ -13,7 +13,7 @@ def segment_windows(chunks, classes, window_size, segmentation_method=SEGMENTATI
 
     Returns
     -------
-    dataframe with new action ids (belonging to each segment)
+    dataframe with new action ids (belonging to each segment) & label vector
     """
 
     new_chunks = []

@@ -32,3 +32,24 @@ def set_time_delta_as_index(data_frame, origin_timestamp_unit="ms", output_times
     data_frame = pd.DataFrame(data_frame.values, index=time_delta_index, columns=data_frame.columns)
     data_frame.drop(timestamp_key, axis=1, inplace=True)
     return data_frame
+
+
+def remove_user_from_df(X):
+    """
+    Removes the 'user' column from the df of features and returns it.
+    This is needed for LOOCV to later reference which entry belongs to which user.
+    Since the order of entries doesn't change it is enough to return the single column.
+    Parameters
+    ----------
+    X
+
+    Returns the user column
+    -------
+
+    """
+    user_col = X.loc[:, ["user", "combined_id"]].groupby("combined_id", as_index = False).median()
+    X.drop("user",axis=1, inplace=True)
+    X.drop("user_right",axis=1, inplace=True)
+
+    # return the most frequent user value for each segment (even though the value should never differ within one segment)
+    return user_col["user"]
