@@ -48,7 +48,7 @@ def pca_2d(X, y, targets, colors):
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel('Principal Component 1', fontsize=15)
     ax.set_ylabel('Principal Component 2', fontsize=15)
-    ax.set_title('2 component PCA', fontsize=20)
+    ax.set_title('Two component PCA', fontsize=20)
 
     for target, color in zip(targets, colors):
         indices_to_keep = final_df['target'] == target
@@ -84,7 +84,7 @@ def pca_null_clf(X, X_null, n_components=2):
         ax.set_ylabel('Principal Component 2', fontsize=15)
         if n_components == 3:
             ax.set_zlabel('Principal Component 3', fontsize=15)
-        ax.set_title('2 component PCA', fontsize=20)
+        ax.set_title('Three component PCA', fontsize=20)
         if n_components == 2:
             ax.scatter(principal_df_ocd['principal component 1'], principal_df_ocd['principal component 2'], color="b")
             ax.scatter(principal_df_null['principal component 1'], principal_df_null['principal component 2'], color="r")
@@ -113,7 +113,7 @@ def pca_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b']):
     ax.set_xlabel('Principal Component 1', fontsize=15)
     ax.set_ylabel('Principal Component 2', fontsize=15)
     ax.set_zlabel('Principal Component 3', fontsize=15)
-    ax.set_title('3 component PCA', fontsize=20)
+    ax.set_title('Three component PCA', fontsize=20)
 
     for target, color in zip(targets, colors):
         indices_to_keep = final_df['target'] == target
@@ -136,9 +136,9 @@ def sne_2d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_xlabel('Principal Component 1', fontsize=15)
-    ax.set_ylabel('Principal Component 2', fontsize=15)
-    ax.set_title('2 component SNE', fontsize=20)
+    ax.set_xlabel('Dimension 1', fontsize=15)
+    ax.set_ylabel('Dimension 2', fontsize=15)
+    ax.set_title('Two dimensional t-SNE', fontsize=20)
 
     for target, color in zip(targets, colors):
         indices_to_keep = sne_final_df['target'] == target
@@ -160,10 +160,10 @@ def sne_3d(X, y, targets= ['OCD activity', 'null class'], colors = ['r', 'b'], n
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlabel('Principal Component 1', fontsize=15)
-    ax.set_ylabel('Principal Component 2', fontsize=15)
-    ax.set_zlabel('Principal Component 3', fontsize=15)
-    ax.set_title('3 component SNE', fontsize=20)
+    ax.set_xlabel('Dimension 1', fontsize=15)
+    ax.set_ylabel('Dimension 2', fontsize=15)
+    ax.set_zlabel('Dimension 3', fontsize=15)
+    ax.set_title('Three dimensional t-SNE', fontsize=20)
 
     for target, color in zip(targets, colors):
         indices_to_keep = sne_final_df['target'] == target
