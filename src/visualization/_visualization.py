@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -189,37 +191,115 @@ def expand_columns(df, list_columns):
 import seaborn as sn
 
 def visualize_final_results():
-    data = pd.read_csv("../../all_results.csv", sep="|", index_col=False)
-    config_options = data["experiment"].str.split("_", expand=True,)
-    classType = data["experiment"].str.split("[A-Z]", n=1, expand=True,)[0]
-    config_options = pd.concat([classType, config_options], axis = 1)
-    config_options.columns = range(config_options.shape[1])
-    config_options[1] = data["experiment"].str.split("[A-Z]", n=1, expand=True,)[1]
-    indoor = data["experiment"].str.split("ind", n=1, expand=True,)[1]
-    config_options = pd.concat([indoor, config_options], axis = 1)
-    config_options.columns = range(config_options.shape[1])
-    config_options[2] = config_options[2].str.split("ind", n=1, expand=True,)[0]
-    config_options.columns = ['proximity used', 'classification type binary', 'recordings multi', 'fingerprinting used', 'features minimal', 'window size', 'null class used']
-    data = pd.concat([config_options, data], axis = 1).drop(columns=["experiment"]).replace("fingerprintingFalse", False).replace("fingerprintingTrue", True).replace("fingerprintingTrue", True).replace("nullClassIncludedTrue", True).replace("nullClassIncludedFalse", False).replace("oorFalse.*", False, regex=True).replace("oorTrue.*", True, regex=True).replace("riane", False).replace("na-2-Ariane-Julian-Wiktoria.*", True, regex=True).replace("binary", True).replace("multi", False).replace("featuresMinimalFCParameters", True).replace("featuresEfficientFCParameters", False).replace("windowSize100", "100").replace("windowSize200", "200")
-    data["null class used"] = data["null class used"].fillna("Binary")
-    data['proximity used'].loc[(data['proximity used']) & (data['fingerprinting used'])] = False
-    data = data[['classification type binary', 'null class used', 'recordings multi', 'features minimal', 'proximity used', 'fingerprinting used', 'window size', 'Logistic_Regression']]
-    data = expand_columns(data, ['window size'])
-    data = data.drop("window size is windowSize50", axis=1)
-    data_binary = data.loc[data['classification type binary']].drop(["null class used", "classification type binary"], axis = 1)
-    data_multi = data.loc[data['classification type binary'] == False].drop("classification type binary", axis = 1)
+    classifier = "NB"
+    #data = get_accuracy_data(binary = True, classifier=classifier)
+    #data = get_accuracy_data(binary = False, classifier=classifier)
+    #data = get_f1_data(ocd_activities=True, classifier=classifier)
+    data = get_f1_data(ocd_activities=False, classifier=classifier)
+    data = data.drop("features minimal", axis=1)
+    print(data.to_string())
 
-    #print(data_multi["Logistic_Regression"].sum()/len(data_multi["Logistic_Regression"]))
-    y = data_multi[["Logistic_Regression"]]
-    X = data_multi.drop("Logistic_Regression", axis = 1)
+    #print(data_multi[classifier].sum()/len(data_multi[classifier]))
+    y = data[[classifier]]
+    X = data.drop(classifier, axis = 1)
     import statsmodels.api as sm
     X = sm.add_constant(X)
     results = sm.OLS(y, X.astype(float), missing="drop").fit()
     print(results.params)
 
-    #corrMatrix = data_multi.corr()["Logistic_Regression"]
-    sn.heatmap(pd.DataFrame(results.params).drop("const", axis = 0), annot=True) #.drop("Logistic_Regression", axis = 0)
+    #corrMatrix = data_multi.corr()[classifier]
+    sn.heatmap(pd.DataFrame(results.params).drop("const", axis = 0), annot=True) #.drop(classifier, axis = 0)
     plt.show()
+
+def get_accuracy_data(binary, classifier):
+
+    data = pd.read_csv("../../all_results_accuracy.csv", sep="|", index_col=False)
+    config_options = data["experiment"].str.split("_", expand=True, )
+    config_options[6] = np.where(config_options[7], config_options[7], config_options[6])
+    config_options = config_options.drop(7, axis = 1)
+    config_options = config_options.drop(4, axis=1)
+    config_options.columns = range(config_options.shape[1])
+    classType = data["experiment"].str.split("[A-Z]", n=1, expand=True, )[0]
+    config_options = pd.concat([classType, config_options], axis=1)
+    config_options.columns = range(config_options.shape[1])
+    config_options[1] = data["experiment"].str.split("[A-Z]", n=1, expand=True, )[1]
+    indoor = data["experiment"].str.split("IL", n=1, expand=True, )[1]
+    config_options = pd.concat([indoor, config_options], axis=1)
+    config_options.columns = range(config_options.shape[1])
+    config_options[2] = config_options[2].str.split("IL", n=1, expand=True, )[0]
+    config_options[7] = np.where(config_options[1] == "binary", "Binary", config_options[7])
+    if binary:
+        config_options[7] = np.nan
+    config_options.columns = ['proximity used', 'classification type binary', 'recordings multi part', 'fingerprinting used',
+                              'features minimal', 'window size', 'overlap', 'null class used']
+    data = pd.concat([config_options, data], axis=1).drop(columns=["experiment"]).replace("fingerpFalse",
+                                                                                          False).replace(
+        "fingerpTrue", True).replace("nullInclTrue", True).replace(
+        "nullClassIncludedFalse", False).replace("^False.*", False, regex=True).replace("^True.*", True,
+                                                                                          regex=True).replace("riane",
+                                                                                                              False).replace(
+        "na-2-.*", True, regex=True).replace("binary", True).replace("multi", False).replace(
+        "featMinimalFCParameters", True).replace("featEfficientFCParameters", False).replace("winSize100",
+                                                                                                     "100").replace(
+        "winSize200", "200")
+    data["null class used"] = data["null class used"].fillna("Binary")
+    data['proximity used'].loc[(data['proximity used']) & (data['fingerprinting used'])] = False
+    data = data[
+        ['classification type binary', 'null class used', 'recordings multi part', 'features minimal', 'proximity used',
+         'fingerprinting used', 'overlap', 'window size', classifier]]
+    data['overlap'] = data['overlap'].replace("no", False).replace("overlap-all", True)
+    data['overlap'] = data['overlap'].replace("no", False).replace("overlap", True)
+    data['null class used'] = data['null class used'].replace("nullInclTrue-all", True).replace("nullInclFalse-all", False)
+    data = expand_columns(data, ['window size'])
+    data = data.drop("window size is winSize50", axis=1)
+    if binary:
+        return data.loc[data['classification type binary']].drop(["null class used", "classification type binary"],
+                                                                    axis=1)
+    else:
+        return data.loc[data['classification type binary'] == False].drop("classification type binary", axis=1)
+
+def get_f1_data(ocd_activities, classifier):
+    if ocd_activities:
+        data = pd.read_csv("../../all_results_f1_ocd.csv", sep="|", index_col=False)
+    else:
+        data = pd.read_csv("../../all_results_f1_null.csv", sep="|", index_col=False)
+    config_options = data["experiment"].str.split("_", expand=True, )
+    config_options = config_options.drop([4], axis=1)
+    config_options[5] = config_options[5] + config_options[6]
+    config_options = config_options.drop([6], axis=1)
+    config_options.columns = range(config_options.shape[1])
+    classType = data["experiment"].str.split("[A-Z]", n=1, expand=True, )[0]
+    config_options = pd.concat([classType, config_options], axis=1)
+    config_options.columns = range(config_options.shape[1])
+    config_options[1] = data["experiment"].str.split("[A-Z]", n=1, expand=True, )[1]
+    indoor = data["experiment"].str.split("IL", n=1, expand=True, )[1]
+    config_options = pd.concat([indoor, config_options], axis=1)
+    config_options.columns = range(config_options.shape[1])
+    config_options[2] = config_options[2].str.split("IL", n=1, expand=True, )[0]
+    config_options[7] = np.nan
+    config_options.columns = ['proximity used', 'classification type binary', 'recordings multi part',
+                              'fingerprinting used',
+                              'features minimal', 'window size', 'overlap', 'null class used']
+    data = pd.concat([config_options, data], axis=1).drop(columns=["experiment"]).replace("fingerpFalse",
+                                                                                          False).replace(
+        "fingerpTrue", True).replace("nullClassIncludedTrue", True).replace(
+        "nullClassIncludedFalse", False).replace("^False.*", False, regex=True).replace("^True.*", True,
+                                                                                       regex=True).replace("riane",
+                                                                                                           False).replace(
+        "na-2-.*", True, regex=True).replace("binary", True).replace("multi", False).replace(
+        "featMinimalFCParameters", True).replace("featEfficientFCParameters", False).replace("winSize100",
+                                                                                                     "100").replace(
+        "winSize200", "200")
+    data["null class used"] = data["null class used"].fillna("Binary")
+    data['proximity used'].loc[(data['proximity used']) & (data['fingerprinting used'])] = False
+    data = data[
+        ['classification type binary', 'null class used', 'recordings multi part', 'features minimal', 'proximity used',
+         'fingerprinting used', 'overlap', 'window size', classifier]]
+    data['overlap'] = data['overlap'].replace("nooverlap-all", False).replace(np.nan, True)
+    data = expand_columns(data, ['window size'])
+    data = data.drop("window size is winSize50", axis=1)
+    return data.loc[data['classification type binary']].drop(["null class used", "classification type binary"],
+                                                                    axis=1)
 
 def test_final_results_visualization():
     visualize_final_results()

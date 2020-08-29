@@ -45,7 +45,10 @@ def run_multiclass_classification(experiment_dir_path, experiment_dirs_selected,
                                                                                                  feature_calculation_setting.__class__.__name__,
                                                                                                  window_size, segmentation_method, null_class_included)
 
-    activities_sub_folder = selected_activities_str + "/"
+    if selected_activities:
+        activities_sub_folder = selected_activities_str + "/"
+    else:
+        activities_sub_folder = "all/"
     path = path + "/output_experiments/multi/" + participants_folder + sub_folder + activities_sub_folder
     if not os.path.exists(path):
         os.makedirs(path)
@@ -204,7 +207,10 @@ def run_binary_classification(experiment_dir_path, experiment_dirs_selected, use
     sub_folder = "IL{}_fingerp{}_feat{}_winSize{}_segMeth{}/".format(use_indoor, use_fingerprinting_approach,
                                                                              feature_calculation_setting.__class__.__name__,
                                                                              window_size, segmentation_method)
-    activities_sub_folder = selected_activities_str + "/"
+    if selected_activities:
+        activities_sub_folder = selected_activities_str + "/"
+    else:
+        activities_sub_folder = "all/"
     path = path + "/output_experiments/binary/" + participants_folder + sub_folder + activities_sub_folder
     if not os.path.exists(path):
         os.makedirs(path)

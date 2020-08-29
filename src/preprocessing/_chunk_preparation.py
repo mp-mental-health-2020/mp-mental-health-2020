@@ -148,7 +148,7 @@ def preprocess_chunks_for_multiclass_test_one_handed(chunks, null_chunks, y, use
         action_id = i + 2 * chunks_length # from the first loop we generated max 2 * chunks_length action_ids
         if len(left_chunk):
             chunks_null_class_merged.append(merge_chunks(left_chunk, None, action_id, indoor_chunk))
-            # again make sure that we don't accidentally get overlapping action ids
+            # again make sure that we don not accidentally get overlapping action ids
             chunks_null_class_merged.append(merge_chunks(right_chunk, None, action_id + chunks_null_length, indoor_chunk))
 
     # for each ocd chunk we should have a null chunk
