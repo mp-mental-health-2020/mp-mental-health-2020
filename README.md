@@ -39,6 +39,29 @@ We have `pylint` installed, so please write tests if possible.
 Also if you want to create a new feature, please create a separate `feature/...`-branch for it branching off of the `dev`-branch.
 If you feel insecure at any point with git branching/PR's or anything like that don't hesitate to ask. :)
 
+## Folder structure
+
+mp-mental-health-2020
+--data: Here the recorded data is put, intoor_positioning data and IMU data seperated from each other.
+----indoor_positioning: Here the indoor positioning data is put.
+----phyphox: Here the IMU data is put - this folder can be explicitly configured in the configuration file.
+--src: All the source code.
+----classification: All relevant methods for classification.
+----data_reading: Methods for reading the data from the data folder.
+----evaluation: Methods for evaluating the results of classification.
+----experiments: Methods to start a classification and data analysis run with a certain configuration.
+------config_files: Includes a JSON file in which one can write a configuration which influences the execution of classification and data analysis runs.
+------output_experiments: Here all the results of classification and data analysis are being safed.
+----features: Methods relevant to feature engineering.
+----indoor_positioning: Methods relevant to the preprocessing of indoor positioning data.
+----output: Methods for saving outputs from the scripts, such as figures.
+----preprocessing: Methods relevant to the preprocessing of all the data.
+----visualization: Methods for visualizing data and results.
+--tests: Tests for the code.
+
+
+
 ## Executing code
 
-/* @Marvin, maybe you can add some notes on how to properly set up the directory structure and run the code here */
+In the project folder executed the following command:
+`$ python3  src/__main__.py`
