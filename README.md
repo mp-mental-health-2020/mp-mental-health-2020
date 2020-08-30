@@ -1,4 +1,4 @@
-# Activity recognition for OCD (Mental Health master project 2020)
+# OCDC - An Obsessive-Compulsive Disorder Classification System (Mental Health master project 2020)
 
 ## Setup
 
@@ -40,7 +40,7 @@ Also if you want to create a new feature, please create a separate `feature/...`
 If you feel insecure at any point with git branching/PR's or anything like that don't hesitate to ask. :)
 
 ## Folder structure
-
+```
 mp-mental-health-2020
 --data: Here the recorded data is put, intoor_positioning data and IMU data seperated from each other.
 ----indoor_positioning: Here the indoor positioning data is put.
@@ -58,10 +58,10 @@ mp-mental-health-2020
 ----preprocessing: Methods relevant to the preprocessing of all the data.
 ----visualization: Methods for visualizing data and results.
 --tests: Tests for the code.
+```
 
 
-
-## Executing code
+## Running the system
 
 In the project folder executed the following command:
 `$ python3  src/__main__.py`
