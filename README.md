@@ -63,5 +63,5 @@ mp-mental-health-2020
 
 ## Running the system
 
-In the project folder executed the following command:
+Executed the following command in the project folder:
 `$ python3  src/__main__.py`
