@@ -1,8 +1,12 @@
 import numpy as np
+import sys
+
+sys.path.append(".")
 
 from src import preprocessing, shared_constants, visualization
 from src.data_reading.phyphox import get_experiments, read_experiment
 from src.features import calculate_auto_correlation_data_frame
+from src.experiments.supervised_classification import run_experiments
 
 
 def autocorrelation_phyphox():
@@ -37,4 +41,5 @@ def calculate_auto_correlation_coefficients(data_frame):
 
 if __name__ == "__main__":
     # execute only if run as a script
-    autocorrelation_phyphox()
+    # autocorrelation_phyphox()
+    run_experiments(config_file='/tmp/pycharm_project_688/src/experiments/config_files/experiments_config.json')

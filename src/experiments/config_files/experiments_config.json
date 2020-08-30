@@ -1,14 +1,14 @@
 {
-	"classification_types": ["binary", "multiclass"],
+	"classification_types": ["multi", "binary"],
 	"experiment_dir_paths": ["./data/phyphox/full recordings/"],
-	"experiment_dirs_selected": [["Ana-2", "Anne", "Ariane", "Cilly", "Fabi", "Jonas", "Julian", "Julius","Marvin", "Wiktoria"]],
-	"activities": [],
-	"use_indoor": [true],
-	"use_fingerprinting_approach": [true],
-	"feature_calculation_settings": ["minimal"],
+	"experiment_dirs_selected": [["Ana-2", "Anne", "Ariane", "Cilly", "Fabi", "Julian", "Julius","Marvin", "Wiktoria"], ["Ariane"]],
+	"activities": [["washing hands", "drying hands"], ["cleaning table", "cleaning window"], ["pushing door", "pulling door"], []],
+	"use_indoor": [false, true],
+	"use_fingerprinting_approach": [false, true],
+	"feature_calculation_settings": ["minimal", "efficient"],
 	"window_sizes": [50,100,200],
+	"overlaps": [false, true],
 	"null_class_included": [true, false],
-	"right_hand_only": [false],
 	"exclude":
 		[]
 }

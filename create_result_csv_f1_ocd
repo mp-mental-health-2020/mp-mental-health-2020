@@ -1,0 +1,89 @@
+#!/bin/bash
+
+rm all_results_f1_ocd.csv
+classifier_names=("NB" "LDA" "Logistic Regression" "CART" "Random Forest" "LinearSVC" "XGBoost binary" "XGBoost mult" "SVC")
+echo "experiment|NB|LDA|Logistic_Regression|CART|Random_Forest|LinearSVC|XGBoost_binary|XGBoost_mult|SVC" >> all_results_f1_ocd.csv
+
+for D in *; do
+    if [ -d "${D}" ]; then
+	cd "${D}"
+	for D2 in *; do
+	    if [ -d "${D2}" ]; then
+		cd "${D2}"
+		for D3 in *; do
+	    		if [ -d "${D3}" ]; then
+				cd "${D3}"
+				if [ -d "all" ]; then
+					cd "all"
+					full_path="$D$D2$D3-all|" 
+					echo -n "$full_path" >> ../../../../all_results_f1_ocd.csv
+					result=("" "" "" "" "" "" "" "")
+					for classifier in "${classifier_names[@]}" 
+					do
+						if [ "$classifier" == "NB" ]
+						then
+							result[0]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[0]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[0]})"
+						fi
+						if [ "$classifier" == "LDA" ]
+						then
+							result[1]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[1]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[1]})"
+						fi
+						if [ "$classifier" == "Logistic Regression" ]
+						then
+							result[2]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[2]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[2]})"
+						fi
+						if [ "$classifier" == "CART" ]
+						then
+							result[3]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[3]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[3]})"
+						fi
+						if [ "$classifier" == "Random Forest" ]
+						then
+							result[4]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[4]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[4]})"
+						fi
+						if [ "$classifier" == "LinearSVC" ]
+						then
+							result[5]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[5]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[5]})"
+						fi
+						if [ "$classifier" == "XGBoost binary" ]
+						then
+							result[6]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[6]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[6]})"
+						fi
+						if [ "$classifier" == "XGBoost mult" ]
+						then
+							result[7]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[7]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[7]})"
+						fi
+						if [ "$classifier" == "SVC" ]
+						then
+							result[8]="$(grep "^$classifier: F1 score for class OCD activity:" console.txt)"
+							result[8]="$(grep -Po '(?<=: )[0 1]\..{2}' <<< ${result[8]})"
+						fi
+					done
+					for r in "${result[@]}"
+					do
+						if [ "$r" != "" ]
+						then
+							echo -n "$r|" >> ../../../../all_results_f1_ocd.csv
+						else
+							echo -n "|" >> ../../../../all_results_f1_ocd.csv
+						fi
+					done
+					echo "" >> ../../../../all_results_f1_ocd.csv
+					cd ..
+				fi
+				cd ..
+	    		fi
+		done
+		cd ..
+	    fi
+	done
+	cd ..
+    fi
+done
